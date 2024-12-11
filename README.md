@@ -53,9 +53,7 @@ Control what information appears in the AH sales text object:
   - `date`: Auction end or sale/return date and time.  
   - `price`: Asking price.  
   - `empty`: Show/hide empty slots.  
-  - `slot`: Display normalized slot numbers.
-
-- **Save Settings:** `ah save`  
+  - `slot`: Display normalized slot numbers. 
 
 ---
 
