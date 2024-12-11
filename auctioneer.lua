@@ -251,7 +251,7 @@ function find_empty_slot()
     return nil;
 end;
 
-ashita.events.register('incoming_packet', 'incoming_packet_cb', function(id, size, packet)
+ashita.events.register('incoming_packet', 'incoming_packet_cb', function(id, size, data, modified, blocked)
     if (id == 0x04C) then
         local pType = packet:byte(5);
         if (pType == 0x04) then
