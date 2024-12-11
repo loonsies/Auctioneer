@@ -178,9 +178,10 @@ ashita.events.register(
 )
 
 ashita.events.register(
-    "render",
-    "render_cb",
+    "d3d_present",
+    "d3d_present_cb",
     function()
+		print('render')
         if (auction_box ~= nil and auctioneer.settings.auction_list.visibility == true) then
             auction_list:SetText(display_box())
             auction_list:SetVisibility(true)
@@ -257,7 +258,7 @@ ashita.events.register(
                     0xFF
                 ):totable()
                 --print(chat.header(addon.name):append(chat.message(string.format('modified %s  size [%d]',table.tostring(obox, '%.2X '),#obox))));
-                AddIncomingPacket(0x4B, obox)
+                AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, obox)
                 return true
             end
 
@@ -285,13 +286,13 @@ ashita.events.register(
                     0xFF
                 ):totable()
                 --print(chat.header(addon.name):append(chat.message(string.format('modified %s  size [%d]',table.tostring(ibox, '%.2X '),#ibox))));
-                AddIncomingPacket(0x4B, ibox)
+                AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, ibox)
                 return true
             end
 
             if (#args == 1 or string.lower(args[2]) == "menu") then
                 lclock = now + 3
-                AddIncomingPacket(
+                AshitaCore:GetPacketManager():AddIncomingPacket(
                     0x4C,
                     struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00):totable()
                 )

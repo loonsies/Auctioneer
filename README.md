@@ -1,43 +1,71 @@
-Auctioneer
-=============
-Auction house bidding tool - addon for Ashita
------------------------------------------------
-Allows you to perform auction house actions with commands, much like bidder with additional functionality.
-Displays a text object with sales information when opening ah menu (if text object is set to show).
+# Auctioneer
+### Auction House Bidding Tool for Ashita
 
-buy [item name] [stack] [price] -- buy an item on auction house
+Auctioneer is an addon for Ashita that enhances your auction house experience. It allows you to perform auction house actions via commands, display sales information, and customize your AH interface.
 
-sell [item name] [ stack] [price] -- sell an item, must open ah once after addon has loaded/players logged in.
+---
 
-[item name] - Accepts auto-translate, short or full item name, no quotes needed.
+## Features
+- **Command-based Bidding and Selling**  
+  Perform AH transactions quickly using simple commands.
+- **Sales Information Display**  
+  View sales details in a customizable text object when opening the AH menu.
+- **Inbox/Outbox Access**  
+  Open your delivery boxes directly with commands.
 
-[Stack] - "stack" or "1" or "single" or "0"
+---
 
-[price] - CSV and EU decimal mark are optional. e.g. 100000 or 100,000 or 100.000
+## Commands
 
-inbox / ibox	-- open delivery inbox
+### Buying and Selling
+- **Buy Items**  
+  `buy [item name] [stack] [price]`  
+  Example: `buy Prism Powder stack 1000`  
+  Purchases an item on the auction house.
 
-outbox / obox	-- open delivery outbox
+- **Sell Items**  
+  `sell [item name] [stack] [price]`  
+  Example: `sell Prism Powder 1 2000`  
+  Lists an item for sale. Open the AH once after logging in or loading the addon.
 
-ah		-- open AH menu
+#### Parameters:
+- `[item name]`: Auto-translate, short, or full names accepted (no quotes needed).  
+- `[stack]`: Use `stack`, `single`, `1`, or `0`.  
+- `[price]`: Accepts formats like `100000`, `100,000`, or `100.000`.
 
-ah clear 	-- clear sold/unsold status
+---
 
-ah show/ah hide -- show or hide text object, accepts following arguments to customize displayed information, show as little or as much as you like.
+### Delivery Box Commands
+- **Open Inbox:** `inbox` or `ibox`  
+- **Open Outbox:** `outbox` or `obox`  
 
-	timer	-- show timer counting down/up to/from end of auction/time of sale.
-	date	-- date and time the item auction ends/returned/was sold
-	price	-- display your asking price
-	empty	-- show/hide empty slots
-	slot	-- show slot number(normalized) next to item entry
+---
 
-ah save -- save settings related to text object
+### Auction House Menu Commands
+- **Open AH Menu:** `ah`  
+- **Clear Sold/Unsold Status:** `ah clear`  
 
+### Text Object Customization
+Control what information appears in the AH sales text object:  
+- `ah show` or `ah hide`  
+  Customize display options using:  
+  - `timer`: Countdown/up timer.  
+  - `date`: Auction end or sale/return date and time.  
+  - `price`: Asking price.  
+  - `empty`: Show/hide empty slots.  
+  - `slot`: Display normalized slot numbers.
 
-check settings file for more customization options.
+- **Save Settings:** `ah save`  
 
-##### If there has been a mainenance or update to the game make sure ashitas resources been updated to reflect new items added.
+---
 
-TODO:	Expand delivery boxes beyond auction house zones (list mog house zones, other delivery areas),
-	Block sell confirm window when injecting sell packet (only occurs when selling inside sell menu),
-	Adjust delays.
+## Additional Notes
+- Check the settings file for further customization options.
+- After game updates or maintenance, ensure Ashita's resources are updated for new items.
+
+---
+
+## To-Do List
+1. Expand delivery box functionality to other zones (e.g., Mog House).  
+2. Block sell confirmation when injecting sell packets (occurs within the sell menu).  
+3. Adjust delays for smoother performance.
