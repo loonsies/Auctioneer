@@ -170,12 +170,12 @@ ashita.events.register(
         auction_list = AshitaCore:GetFontManager():Create("auction_list")
         auction_list:SetFontFamily(auctioneer.settings.text.font_family)
         auction_list:SetFontHeight(auctioneer.settings.text.font_height)
-		auction_list:SetColor(auctioneer.settings.text.color)
+        auction_list:SetColor(auctioneer.settings.text.color)
         auction_list:SetPositionX(auctioneer.settings.text.position_x)
         auction_list:SetPositionY(auctioneer.settings.text.position_y)
         auction_list:SetVisible(auctioneer.settings.auction_list.visibility)
         auction_list:GetBackground():SetVisible(true)
-		auction_list:GetBackground():SetColor(auctioneer.settings.text.background.color)
+        auction_list:GetBackground():SetColor(auctioneer.settings.text.background.color)
     end
 )
 
@@ -320,14 +320,14 @@ ashita.events.register(
             elseif auctioneer.settings.auction_list[string.lower(args[3])] ~= nil then
                 auctioneer.settings.auction_list[string.lower(args[3])] = true
             end
-			settings.save()
+            settings.save()
         elseif (args[2] == "hide") then
             if (#args == 2) then
                 auctioneer.settings.auction_list.visibility = false
             elseif auctioneer.settings.auction_list[string.lower(args[3])] ~= nil then
                 auctioneer.settings.auction_list[string.lower(args[3])] = false
             end
-			settings.save()
+            settings.save()
         end
         return true
     end
