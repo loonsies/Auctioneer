@@ -64,6 +64,7 @@ Control what information appears in the AH sales text object:
 ---
 
 ## To-Do List
-1. Expand delivery box functionality to other zones (e.g., Mog House).  
-2. Block sell confirmation when injecting sell packets (occurs within the sell menu).  
-3. Adjust delays for smoother performance.
+1. Add UI interface including search bar with list, filters, etc.
+2. Expand delivery box functionality to other zones (e.g., Mog House).  
+3. Block sell confirmation when injecting sell packets (occurs within the sell menu).  
+4. Adjust delays for smoother performance.
