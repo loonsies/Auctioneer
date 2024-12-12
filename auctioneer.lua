@@ -445,8 +445,6 @@ end
 
 function find_item(item_id, item_count)
     local items = AshitaCore:GetMemoryManager():GetInventory()
-    print(item_id)
-    print(items:GetContainerCountMax(0))
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
         --print(item.Id)
