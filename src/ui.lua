@@ -87,4 +87,175 @@ function ui.updateVisibility()
 	end
 end
 
+local currentTab = {"Buy"}
+local buyCategory = ""
+local sellCategory = ""
+local buySearch = {""}
+local sellSearch = {""}
+local buyPrice = {""}
+local sellPrice = {""}
+local buyStack = {false}
+local sellStack = {false}
+local buyResults = {"Item 1", "Item 2", "Item 3"}
+local sellResults = {"Item A", "Item B", "Item C"}
+local buyTable = {
+    {"12/12/2024", "Seller1", "Buyer1", "100"},
+    {"11/12/2024", "Seller2", "Buyer2", "200"},
+    {"10/12/2024", "Seller3", "Buyer3", "300"}
+}
+local sellTable = {
+    {"12/12/2024", "Seller1", "Buyer1", "100"},
+    {"11/12/2024", "Seller2", "Buyer2", "200"},
+    {"10/12/2024", "Seller3", "Buyer3", "300"}
+}
+
+function ui.drawBuyTab()
+    imgui.Text("Category")
+	imgui.SetNextItemWidth(-1)
+    if imgui.BeginCombo("##BuyCategory", buyCategory) then
+        for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
+            if imgui.Selectable(category, category == buyCategory) then
+                buyCategory = category
+            end
+        end
+        imgui.EndCombo()
+    end
+
+    imgui.Text("Search")
+    local changed
+	imgui.SetNextItemWidth(-1)
+    changed = imgui.InputText("##BuySearch", buySearch, 100)
+
+    if imgui.BeginChild("##BuyResults", {0, 100}, true) then
+        imgui.BeginTable("BuyResultsTable", 1, ImGuiTableFlags_ScrollY)
+		imgui.TableSetupColumn("Item", ImGui)
+        for _, result in ipairs(buyResults) do
+            imgui.TableNextRow()
+            imgui.TableSetColumnIndex(0)
+            imgui.Text(result)
+        end
+        imgui.EndTable()
+        imgui.EndChild()
+    end
+
+	imgui.NewLine()
+	imgui.Text("Price")
+	imgui.SameLine()
+	imgui.SetNextItemWidth(-1)
+    changed = imgui.InputText("##BuyPrice", buyPrice, 50)
+    changed = imgui.Checkbox("Stack", buyStack)
+	imgui.SameLine()
+    if imgui.Button("Buy") then
+        print("Buying with price: " .. buyPrice[1] .. ", Stack: " .. tostring(buyStack[1]))
+    end
+
+	imgui.NewLine()
+	imgui.Text("Price History")
+    if imgui.BeginTable("BuyTable", 4, ImGuiTableFlags_ScrollY) then
+        imgui.TableSetupColumn("Date")
+        imgui.TableSetupColumn("Seller")
+        imgui.TableSetupColumn("Buyer")
+        imgui.TableSetupColumn("Price")
+        imgui.TableHeadersRow()
+        
+        for _, row in ipairs(buyTable) do
+            imgui.TableNextRow()
+            for colIndex, cell in ipairs(row) do
+                imgui.TableSetColumnIndex(colIndex - 1)
+                imgui.Text(cell)
+            end
+        end
+        imgui.EndTable()
+    end
+end
+
+function ui.drawSellTab()
+    imgui.Text("Category")
+	imgui.SetNextItemWidth(-1)
+    if imgui.BeginCombo("##SellCategory", sellCategory) then
+        for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
+            if imgui.Selectable(category, category == sellCategory) then
+                sellCategory = category
+            end
+        end
+        imgui.EndCombo()
+    end
+
+    imgui.Text("Search")
+    local changed
+	imgui.SetNextItemWidth(-1)
+    changed = imgui.InputText("##SellSearch", sellSearch, 100)
+
+    if imgui.BeginChild("##SellResults", {0, 100}, true) then
+        imgui.BeginTable("SellResultsTable", 1, ImGuiTableFlags_ScrollY)
+        for _, result in ipairs(sellResults) do
+            imgui.TableNextRow()
+            imgui.TableSetColumnIndex(0)
+            imgui.Text(result)
+        end
+        imgui.EndTable()
+        imgui.EndChild()
+    end
+
+	imgui.NewLine()
+	imgui.Text("Price")
+	imgui.SameLine()
+	imgui.SetNextItemWidth(-1)
+    changed = imgui.InputText("##SellPrice", sellPrice, 50)
+    changed = imgui.Checkbox("Stack", sellStack)
+	imgui.SameLine()
+    if imgui.Button("Sell") then
+        print("Selling with price: " .. sellPrice[1] .. ", Stack: " .. tostring(sellStack[1]))
+    end
+
+	imgui.NewLine()
+    imgui.Text("Price History")
+    if imgui.BeginTable("SellTable", 4, ImGuiTableFlags_ScrollY) then
+        imgui.TableSetupColumn("Date")
+        imgui.TableSetupColumn("Seller")
+        imgui.TableSetupColumn("Buyer")
+        imgui.TableSetupColumn("Price")
+        imgui.TableHeadersRow()
+        
+        for _, row in ipairs(sellTable) do
+            imgui.TableNextRow()
+            for colIndex, cell in ipairs(row) do
+                imgui.TableSetColumnIndex(colIndex - 1)
+                imgui.Text(cell)
+            end
+        end
+        imgui.EndTable()
+    end
+end
+
+function ui.drawSettingsTab()
+    imgui.Text("Settings Placeholder")
+end
+
+function ui.drawUI()
+    if imgui.Begin("Auctioneer") then
+        if imgui.BeginTabBar("MainTabs") then
+            if imgui.BeginTabItem("Buy") then
+                currentTab = "Buy"
+                ui.drawBuyTab()
+                imgui.EndTabItem()
+            end
+
+            if imgui.BeginTabItem("Sell") then
+                currentTab = "Sell"
+                ui.drawSellTab()
+                imgui.EndTabItem()
+            end
+
+            if imgui.BeginTabItem("Settings") then
+                currentTab = "Settings"
+                ui.drawSettingsTab()
+                imgui.EndTabItem()
+            end
+            imgui.EndTabBar()
+        end
+        imgui.End()
+    end
+end
+
 return ui

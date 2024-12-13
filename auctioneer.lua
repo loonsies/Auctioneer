@@ -8,6 +8,7 @@ addon.link		= 'https://github.com/senolem/auctioneer';
 require "common"
 settings = require("settings")
 chat = require("chat")
+imgui = require('imgui');
 
 -- Local dependencies
 commands = require("src/commands")
@@ -46,6 +47,7 @@ ashita.events.register(
 	"d3d_present_cb",
 	function()
 		ui.updateVisibility()
+		--ui.drawUI()
 	end
 )
 
