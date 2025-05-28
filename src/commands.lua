@@ -91,7 +91,7 @@ function commands.handleCommand(args)
             return true
         elseif (string.lower(args[2]) == "clear") then
             lclock = now + 3
-            auctionHouse.lear_sales()
+            auctionHouse.clear_sales()
             return true
         end
     end
