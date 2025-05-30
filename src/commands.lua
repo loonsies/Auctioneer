@@ -1,93 +1,45 @@
 commands = {}
 
 function commands.handleCommand(args)
-	args[1] = string.lower(args[1])
-	if (args[1] ~= "/ah" and args[1] ~= "/buy" and args[1] ~= "/sell" and args[1] ~= "/inbox" and
-        args[1] ~= "/outbox" and
-        args[1] ~= "/ibox" and
-        args[1] ~= "/obox")
-    then
+    args[1] = string.lower(args[1])
+    if (args[1] ~= "/ah" and args[1] ~= "/buy" and args[1] ~= "/sell" and args[1] ~= "/inbox" and args[1] ~= "/outbox" and
+        args[1] ~= "/ibox" and args[1] ~= "/obox") then
         return false
     end
 
-    local zone =
-        AshitaCore:GetResourceManager():GetString(
-        "zones.names",
-        AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0)
-    )
+    local zone = AshitaCore:GetResourceManager():GetString("zones.names",
+        AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0))
     local now = os.clock()
     if (table.hasvalue(zones, zone) == true and (lclock == nil or lclock < now)) then
         if (args[1] == "/sell" or args[1] == "/buy") then
             if (#args < 4) then
                 return true
             end
-            if (auctionHouse.proposal(string.lower(args[1]), table.concat(args, " ", 2, #args - 2), args[#args - 1], args[#args]) == true)
-            then
+            if (auctionHouse.proposal(string.lower(args[1]), table.concat(args, " ", 2, #args - 2), args[#args - 1],
+                args[#args]) == true) then
                 lclock = now + 3
             end
             return true
         end
 
         if (args[1] == "/outbox" or args[1] == "/obox") then
-            local obox =
-                struct.pack(
-                "bbxxbbbbbbbbbbbbbbbb",
-                0x4B,
-                0x0A,
-                0x0D,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0x01,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF
-            ):totable()
+            local obox = struct.pack("bbxxbbbbbbbbbbbbbbbb", 0x4B, 0x0A, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF):totable()
             AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, obox)
             return true
         end
 
         if (args[1] == "/inbox" or args[1] == "/ibox") then
-            local ibox =
-                struct.pack(
-                "bbxxbbbbbbbbbbbbbbbb",
-                0x4B,
-                0x0A,
-                0x0E,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0x01,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF
-            ):totable()
+            local ibox = struct.pack("bbxxbbbbbbbbbbbbbbbb", 0x4B, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF):totable()
             AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, ibox)
             return true
         end
 
         if (#args == 1 or string.lower(args[2]) == "menu") then
             lclock = now + 3
-            AshitaCore:GetPacketManager():AddIncomingPacket(
-                0x4C,
-                struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00):totable()
-            )
+            AshitaCore:GetPacketManager():AddIncomingPacket(0x4C, struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00,
+                0x02, 0x00, 0x01, 0x00, 0x00):totable())
             return true
         elseif (string.lower(args[2]) == "clear") then
             lclock = now + 3
@@ -121,7 +73,7 @@ function commands.handleCommand(args)
         settings.save()
     end
 
-	return true
+    return true
 end
 
 return commands

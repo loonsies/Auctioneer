@@ -12,17 +12,13 @@ function ui.updateText()
                 str = str .. string.format(" %s", auctioneer.auction_box[x].status)
             end
             if (auctioneer.auction_box[x].status ~= "Empty") then
-                local timer =
-                    auctioneer.auction_box[x].status == "On auction" and auctioneer.auction_box[x].timestamp + 829440 or
-                    auctioneer.auction_box[x].timestamp
+                local timer = auctioneer.auction_box[x].status == "On auction" and auctioneer.auction_box[x].timestamp +
+                                  829440 or auctioneer.auction_box[x].timestamp
                 if (auctioneer.settings.auction_list.timer) then
-                    str =
-                        str ..
-                        string.format(
-                            " %s",
+                    str = str ..
+                              string.format(" %s",
                             (auctioneer.auction_box[x].status == "On auction" and os.time() - timer > 0) and "Expired" or
-                                utils.timef(math.abs(os.time() - timer))
-                        )
+                                utils.timef(math.abs(os.time() - timer)))
                 end
                 if (auctioneer.settings.auction_list.date) then
                     str = str .. string.format(" [%s]", os.date("%c", timer))
@@ -44,15 +40,15 @@ function ui.updateText()
 end
 
 function ui.init()
-	auction_list = AshitaCore:GetFontManager():Create("auction_list")
-	auction_list:SetFontFamily(auctioneer.settings.text.font_family)
-	auction_list:SetFontHeight(auctioneer.settings.text.font_height)
-	auction_list:SetColor(auctioneer.settings.text.color)
-	auction_list:SetPositionX(auctioneer.settings.text.position_x)
-	auction_list:SetPositionY(auctioneer.settings.text.position_y)
-	auction_list:SetVisible(auctioneer.settings.auction_list.visibility)
-	auction_list:GetBackground():SetVisible(true)
-	auction_list:GetBackground():SetColor(auctioneer.settings.text.background.color)
+    auction_list = AshitaCore:GetFontManager():Create("auction_list")
+    auction_list:SetFontFamily(auctioneer.settings.text.font_family)
+    auction_list:SetFontHeight(auctioneer.settings.text.font_height)
+    auction_list:SetColor(auctioneer.settings.text.color)
+    auction_list:SetPositionX(auctioneer.settings.text.position_x)
+    auction_list:SetPositionY(auctioneer.settings.text.position_y)
+    auction_list:SetVisible(auctioneer.settings.auction_list.visibility)
+    auction_list:GetBackground():SetVisible(true)
+    auction_list:GetBackground():SetColor(auctioneer.settings.text.background.color)
 end
 
 function ui.update(packet)
@@ -79,12 +75,12 @@ function ui.update(packet)
 end
 
 function ui.updateVisibility()
-	if (auctioneer.auction_box ~= nil and auctioneer.settings.auction_list.visibility == true) then
-		auction_list:SetText(ui.updateText())
-		auction_list:SetVisible(true)
-	else
-		auction_list:SetVisible(false)
-	end
+    if (auctioneer.auction_box ~= nil and auctioneer.settings.auction_list.visibility == true) then
+        auction_list:SetText(ui.updateText())
+        auction_list:SetVisible(true)
+    else
+        auction_list:SetVisible(false)
+    end
 end
 
 local currentTab = {"Buy"}
@@ -98,20 +94,14 @@ local buyStack = {false}
 local sellStack = {false}
 local buyResults = {"Item 1", "Item 2", "Item 3"}
 local sellResults = {"Item A", "Item B", "Item C"}
-local buyTable = {
-    {"12/12/2024", "Seller1", "Buyer1", "100"},
-    {"11/12/2024", "Seller2", "Buyer2", "200"},
-    {"10/12/2024", "Seller3", "Buyer3", "300"}
-}
-local sellTable = {
-    {"12/12/2024", "Seller1", "Buyer1", "100"},
-    {"11/12/2024", "Seller2", "Buyer2", "200"},
-    {"10/12/2024", "Seller3", "Buyer3", "300"}
-}
+local buyTable = {{"12/12/2024", "Seller1", "Buyer1", "100"}, {"11/12/2024", "Seller2", "Buyer2", "200"},
+                  {"10/12/2024", "Seller3", "Buyer3", "300"}}
+local sellTable = {{"12/12/2024", "Seller1", "Buyer1", "100"}, {"11/12/2024", "Seller2", "Buyer2", "200"},
+                   {"10/12/2024", "Seller3", "Buyer3", "300"}}
 
 function ui.drawBuyTab()
     imgui.Text("Category")
-	imgui.SetNextItemWidth(-1)
+    imgui.SetNextItemWidth(-1)
     if imgui.BeginCombo("##BuyCategory", buyCategory) then
         for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
             if imgui.Selectable(category, category == buyCategory) then
@@ -123,12 +113,12 @@ function ui.drawBuyTab()
 
     imgui.Text("Search")
     local changed
-	imgui.SetNextItemWidth(-1)
+    imgui.SetNextItemWidth(-1)
     changed = imgui.InputText("##BuySearch", buySearch, 100)
 
     if imgui.BeginChild("##BuyResults", {0, 100}, true) then
         imgui.BeginTable("BuyResultsTable", 1, ImGuiTableFlags_ScrollY)
-		imgui.TableSetupColumn("Item", ImGui)
+        imgui.TableSetupColumn("Item", ImGui)
         for _, result in ipairs(buyResults) do
             imgui.TableNextRow()
             imgui.TableSetColumnIndex(0)
@@ -138,26 +128,26 @@ function ui.drawBuyTab()
         imgui.EndChild()
     end
 
-	imgui.NewLine()
-	imgui.Text("Price")
-	imgui.SameLine()
-	imgui.SetNextItemWidth(-1)
+    imgui.NewLine()
+    imgui.Text("Price")
+    imgui.SameLine()
+    imgui.SetNextItemWidth(-1)
     changed = imgui.InputText("##BuyPrice", buyPrice, 50)
     changed = imgui.Checkbox("Stack", buyStack)
-	imgui.SameLine()
+    imgui.SameLine()
     if imgui.Button("Buy") then
         print("Buying with price: " .. buyPrice[1] .. ", Stack: " .. tostring(buyStack[1]))
     end
 
-	imgui.NewLine()
-	imgui.Text("Price History")
+    imgui.NewLine()
+    imgui.Text("Price History")
     if imgui.BeginTable("BuyTable", 4, ImGuiTableFlags_ScrollY) then
         imgui.TableSetupColumn("Date")
         imgui.TableSetupColumn("Seller")
         imgui.TableSetupColumn("Buyer")
         imgui.TableSetupColumn("Price")
         imgui.TableHeadersRow()
-        
+
         for _, row in ipairs(buyTable) do
             imgui.TableNextRow()
             for colIndex, cell in ipairs(row) do
@@ -171,7 +161,7 @@ end
 
 function ui.drawSellTab()
     imgui.Text("Category")
-	imgui.SetNextItemWidth(-1)
+    imgui.SetNextItemWidth(-1)
     if imgui.BeginCombo("##SellCategory", sellCategory) then
         for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
             if imgui.Selectable(category, category == sellCategory) then
@@ -183,7 +173,7 @@ function ui.drawSellTab()
 
     imgui.Text("Search")
     local changed
-	imgui.SetNextItemWidth(-1)
+    imgui.SetNextItemWidth(-1)
     changed = imgui.InputText("##SellSearch", sellSearch, 100)
 
     if imgui.BeginChild("##SellResults", {0, 100}, true) then
@@ -197,18 +187,18 @@ function ui.drawSellTab()
         imgui.EndChild()
     end
 
-	imgui.NewLine()
-	imgui.Text("Price")
-	imgui.SameLine()
-	imgui.SetNextItemWidth(-1)
+    imgui.NewLine()
+    imgui.Text("Price")
+    imgui.SameLine()
+    imgui.SetNextItemWidth(-1)
     changed = imgui.InputText("##SellPrice", sellPrice, 50)
     changed = imgui.Checkbox("Stack", sellStack)
-	imgui.SameLine()
+    imgui.SameLine()
     if imgui.Button("Sell") then
         print("Selling with price: " .. sellPrice[1] .. ", Stack: " .. tostring(sellStack[1]))
     end
 
-	imgui.NewLine()
+    imgui.NewLine()
     imgui.Text("Price History")
     if imgui.BeginTable("SellTable", 4, ImGuiTableFlags_ScrollY) then
         imgui.TableSetupColumn("Date")
@@ -216,7 +206,7 @@ function ui.drawSellTab()
         imgui.TableSetupColumn("Buyer")
         imgui.TableSetupColumn("Price")
         imgui.TableHeadersRow()
-        
+
         for _, row in ipairs(sellTable) do
             imgui.TableNextRow()
             for colIndex, cell in ipairs(row) do
