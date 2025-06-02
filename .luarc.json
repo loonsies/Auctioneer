@@ -1,0 +1,27 @@
+{
+  "Lua.diagnostics.disable": ["lowercase-global", "undefined-field"],
+  "Lua.diagnostics.globals": [
+    "addon",
+    "ashita",
+    "bit",
+    "struct",
+    "AshitaCore",
+    "LogManager",
+    "RECT",
+    "SIZE",
+    "GetEntity",
+    "GetPlayerEntity",
+    "PluginFlags",
+    "CommandMode",
+    "ChatInputOpenStatus",
+    "LogLevel",
+    "FrameAnchor",
+    "KeyboardEvent",
+    "MouseEvent",
+    "FontBorderFlags",
+    "FontCreateFlags",
+    "FontDrawFlags"
+  ],
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.workspace.library": ["G:\\Ashita\\addons\\libs"]
+}

@@ -12,7 +12,7 @@ function auctionHouse.buy(item, single, price)
 end
 
 function auctionHouse.sell(item, single, price)
-    if (auctioneer.auction_box == nil) then
+    if (auctioneer.AuctionHouse == nil) then
         print(chat.header(addon.name):append(chat.message(
             "AH Error: Click auction counter or use /ah to initialize sales.")))
         return false
@@ -42,9 +42,9 @@ function auctionHouse.sell(item, single, price)
 end
 
 function auctionHouse.findEmptySlot()
-    if (auctioneer.auction_box ~= nil) then
+    if (auctioneer.AuctionHouse ~= nil) then
         for slot = 0, 6 do
-            if (auctioneer.auction_box[slot] ~= nil and auctioneer.auction_box[slot].status == "Empty") then
+            if (auctioneer.AuctionHouse[slot] ~= nil and auctioneer.AuctionHouse[slot].status == "Empty") then
                 return slot
             end
         end
@@ -53,12 +53,12 @@ function auctionHouse.findEmptySlot()
 end
 
 function auctionHouse.clearSales()
-    if (auctioneer.auction_box == nil) then
+    if (auctioneer.AuctionHouse == nil) then
         return false
     end
     for slot = 0, 6 do
-        if (auctioneer.auction_box[slot] ~= nil) and
-            (auctioneer.auction_box[slot].status == "Sold" or auctioneer.auction_box[slot].status == "Not Sold") then
+        if (auctioneer.AuctionHouse[slot] ~= nil) and
+            (auctioneer.AuctionHouse[slot].status == "Sold" or auctioneer.AuctionHouse[slot].status == "Not Sold") then
             local isold = struct.pack("bbxxbbi32i22", 0x4E, 0x1E, 0x10, slot, 0x00, 0x00):totable()
             AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, isold)
         end

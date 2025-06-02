@@ -1,217 +1,189 @@
 local ui = {}
 
-function ui.updateText()
-    local outstr = ""
-    for x = 0, 6 do
-        if (auctioneer.auction_box[x] ~= nil) then
-            local str = ""
-            if (auctioneer.settings.auction_list.empty == true or auctioneer.auction_box[x].status ~= "Empty") then
-                if (auctioneer.settings.auction_list.slot) == true then
-                    str = str .. string.format(" Slot:%s", x + 1)
-                end
-                str = str .. string.format(" %s", auctioneer.auction_box[x].status)
-            end
-            if (auctioneer.auction_box[x].status ~= "Empty") then
-                local timer = auctioneer.auction_box[x].status == "On auction" and auctioneer.auction_box[x].timestamp +
-                                  829440 or auctioneer.auction_box[x].timestamp
-                if (auctioneer.settings.auction_list.timer) then
-                    str = str ..
-                              string.format(" %s",
-                            (auctioneer.auction_box[x].status == "On auction" and os.time() - timer > 0) and "Expired" or
-                                utils.timef(math.abs(os.time() - timer)))
-                end
-                if (auctioneer.settings.auction_list.date) then
-                    str = str .. string.format(" [%s]", os.date("%c", timer))
-                end
-                str = str .. string.format(" %s ", auctioneer.auction_box[x].item)
-                if (auctioneer.auction_box[x].count ~= 1) then
-                    str = str .. string.format("x%d ", auctioneer.auction_box[x].count)
-                end
-                if (auctioneer.settings.auction_list.price) then
-                    str = str .. string.format("[%s] ", utils.commaValue(auctioneer.auction_box[x].price))
-                end
-            end
-            if (str ~= "") then
-                outstr = outstr ~= "" and outstr .. "\n" .. str or str
-            end
-        end
-    end
-    return outstr
-end
+local priceInput = { "" }
+local stack = { false }
 
-function ui.init()
-    auction_list = AshitaCore:GetFontManager():Create("auction_list")
-    auction_list:SetFontFamily(auctioneer.settings.text.font_family)
-    auction_list:SetFontHeight(auctioneer.settings.text.font_height)
-    auction_list:SetColor(auctioneer.settings.text.color)
-    auction_list:SetPositionX(auctioneer.settings.text.position_x)
-    auction_list:SetPositionY(auctioneer.settings.text.position_y)
-    auction_list:SetVisible(auctioneer.settings.auction_list.visibility)
-    auction_list:GetBackground():SetVisible(true)
-    auction_list:GetBackground():SetColor(auctioneer.settings.text.background.color)
-end
+local search = {}
+search.results = {}
+search.input = { "" }
+search.category = 999
+search.previousInput = { "" }
+search.previousCategory = 999
+search.statuses = { noResults = 0, tooShort = 1, found = 3 }
+search.statusesMessage =
+{
+    noResults = "No results found.",
+    tooShort = "A minimum of 2 characters are required for searching."
+}
+search.status = search.statuses.noResults
 
-function ui.update(packet)
-    local slot = packet:byte(0x05 + 1)
-    local status = packet:byte(0x14 + 1)
-    if (auctioneer.auction_box ~= nil and slot ~= 7 and status ~= 0x02 and status ~= 0x04 and status ~= 0x10) then
-        if (status == 0x00) then
-            auctioneer.auction_box[slot] = {}
-            auctioneer.auction_box[slot].status = "Empty"
-        else
-            if (status == 0x03) then
-                auctioneer.auction_box[slot].status = "On auction"
-            elseif (status == 0x0A or status == 0x0C or status == 0x15) then
-                auctioneer.auction_box[slot].status = "Sold"
-            elseif (status == 0x0B or status == 0x0D or status == 0x16) then
-                auctioneer.auction_box[slot].status = "Not Sold"
-            end
-            auctioneer.auction_box[slot].item = utils.getItemName(struct.unpack("h", packet, 0x28 + 1))
-            auctioneer.auction_box[slot].count = packet:byte(0x2A + 1)
-            auctioneer.auction_box[slot].price = struct.unpack("i", packet, 0x2C + 1)
-            auctioneer.auction_box[slot].timestamp = struct.unpack("i", packet, 0x38 + 1)
+
+function ui.update()
+    if (auctioneer.settings.ui.visibility == true) then
+        local currentInput = table.concat(search.input)
+        local previousInput = table.concat(search.previousInput)
+
+        if currentInput ~= previousInput or search.category ~= search.previousCategory then
+            ui.updateSearch()
+            search.previousInput = { currentInput }
+            search.previousCategory = search.category
         end
+        ui.drawUI()
     end
 end
 
-function ui.updateVisibility()
-    if (auctioneer.auction_box ~= nil and auctioneer.settings.auction_list.visibility == true) then
-        auction_list:SetText(ui.updateText())
-        auction_list:SetVisible(true)
+function ui.updateSearch()
+    search.results = {}
+    input = table.concat(search.input)
+
+    if #input < 2 then
+        search.results = {}
+        search.status = search.statuses.tooShort
     else
-        auction_list:SetVisible(false)
+        for _, item in pairs(items) do
+            if (search.category == 999 or search.category == item.category) then
+                if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
+                    table.insert(search.results, item.shortName)
+                end
+            end
+        end
+        if #search.results == 0 then
+            search.results = {}
+            search.status = search.statuses.noResults
+        else
+            search.status = search.statuses.found
+        end
+    end
+
+    if search.status == search.statuses.noResults then
+        search.results = { search.statusesMessage.noResults }
+    elseif search.status == search.statuses.tooShort then
+        search.results = { search.statusesMessage.tooShort }
     end
 end
 
-local currentTab = {"Buy"}
-local buyCategory = ""
-local sellCategory = ""
-local buySearch = {""}
-local sellSearch = {""}
-local buyPrice = {""}
-local sellPrice = {""}
-local buyStack = {false}
-local sellStack = {false}
-local buyResults = {"Item 1", "Item 2", "Item 3"}
-local sellResults = {"Item A", "Item B", "Item C"}
-local buyTable = {{"12/12/2024", "Seller1", "Buyer1", "100"}, {"11/12/2024", "Seller2", "Buyer2", "200"},
-                  {"10/12/2024", "Seller3", "Buyer3", "300"}}
-local sellTable = {{"12/12/2024", "Seller1", "Buyer1", "100"}, {"11/12/2024", "Seller2", "Buyer2", "200"},
-                   {"10/12/2024", "Seller3", "Buyer3", "300"}}
-
-function ui.drawBuyTab()
+function ui.drawFilters()
     imgui.Text("Category")
     imgui.SetNextItemWidth(-1)
-    if imgui.BeginCombo("##BuyCategory", buyCategory) then
-        for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
-            if imgui.Selectable(category, category == buyCategory) then
-                buyCategory = category
+    if imgui.BeginCombo("##Category", categories.list[search.category]) then
+        for _, id in ipairs(categories.order) do
+            local category = categories.list[id]
+            local is_selected = (search.category == id)
+            if imgui.Selectable(category, is_selected) then
+                search.category = id
+                print(id)
             end
         end
         imgui.EndCombo()
     end
+end
 
-    imgui.Text("Search")
-    local changed
+function ui.drawSearch()
+    count = search.status == search.statuses.found and #search.results or 0
+    imgui.Text("Search (" .. count .. ")")
     imgui.SetNextItemWidth(-1)
-    changed = imgui.InputText("##BuySearch", buySearch, 100)
+    imgui.InputText("##Search", search.input, 48)
 
-    if imgui.BeginChild("##BuyResults", {0, 100}, true) then
-        imgui.BeginTable("BuyResultsTable", 1, ImGuiTableFlags_ScrollY)
-        imgui.TableSetupColumn("Item", ImGui)
-        for _, result in ipairs(buyResults) do
-            imgui.TableNextRow()
-            imgui.TableSetColumnIndex(0)
-            imgui.Text(result)
+    if imgui.BeginChild("##Results", { 0, 100 }, true) then
+        if imgui.BeginTable("##ResultsTable", 1, ImGuiTableFlags_ScrollY) then
+            imgui.TableSetupColumn("Item", ImGuiTableFlags_ScrollY)
+            for _, result in ipairs(search.results) do
+                imgui.TableNextRow()
+                imgui.TableSetColumnIndex(0)
+                imgui.Text(result)
+            end
+            imgui.EndTable()
         end
-        imgui.EndTable()
         imgui.EndChild()
     end
-
     imgui.NewLine()
+end
+
+function ui.drawCommands()
     imgui.Text("Price")
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    changed = imgui.InputText("##BuyPrice", buyPrice, 50)
-    changed = imgui.Checkbox("Stack", buyStack)
+    imgui.InputText("##Price", priceInput, 48)
+    imgui.Checkbox("Stack", stack)
     imgui.SameLine()
     if imgui.Button("Buy") then
-        print("Buying with price: " .. buyPrice[1] .. ", Stack: " .. tostring(buyStack[1]))
+        print("Buying with price: " .. priceInput[1] .. ", Stack: " .. tostring(stack[1]))
     end
-
-    imgui.NewLine()
-    imgui.Text("Price History")
-    if imgui.BeginTable("BuyTable", 4, ImGuiTableFlags_ScrollY) then
-        imgui.TableSetupColumn("Date")
-        imgui.TableSetupColumn("Seller")
-        imgui.TableSetupColumn("Buyer")
-        imgui.TableSetupColumn("Price")
-        imgui.TableHeadersRow()
-
-        for _, row in ipairs(buyTable) do
-            imgui.TableNextRow()
-            for colIndex, cell in ipairs(row) do
-                imgui.TableSetColumnIndex(colIndex - 1)
-                imgui.Text(cell)
-            end
-        end
-        imgui.EndTable()
+    imgui.SameLine()
+    if imgui.Button("Sell") then
+        print("Selling with price: " .. priceInput[1] .. ", Stack: " .. tostring(stack[1]))
     end
 end
 
-function ui.drawSellTab()
-    imgui.Text("Category")
-    imgui.SetNextItemWidth(-1)
-    if imgui.BeginCombo("##SellCategory", sellCategory) then
-        for _, category in ipairs({"Weapons", "Armor", "Potions"}) do
-            if imgui.Selectable(category, category == sellCategory) then
-                sellCategory = category
-            end
-        end
-        imgui.EndCombo()
-    end
+function ui.drawPriceHistory()
+    --imgui.NewLine()
+    --imgui.Text("Price History")
+    --if imgui.BeginTable("BuyTable", 4, ImGuiTableFlags_ScrollY) then
+    --    imgui.TableSetupColumn("Date")
+    --    imgui.TableSetupColumn("Seller")
+    --    imgui.TableSetupColumn("Buyer")
+    --    imgui.TableSetupColumn("Price")
+    --    imgui.TableHeadersRow()
 
-    imgui.Text("Search")
-    local changed
-    imgui.SetNextItemWidth(-1)
-    changed = imgui.InputText("##SellSearch", sellSearch, 100)
+    --    for _, row in ipairs(buyTable) do
+    --        imgui.TableNextRow()
+    --        for colIndex, cell in ipairs(row) do
+    --            imgui.TableSetColumnIndex(colIndex - 1)
+    --            imgui.Text(cell)
+    --        end
+    --    end
+    --    imgui.EndTable()
+    --end
+end
 
-    if imgui.BeginChild("##SellResults", {0, 100}, true) then
-        imgui.BeginTable("SellResultsTable", 1, ImGuiTableFlags_ScrollY)
-        for _, result in ipairs(sellResults) do
-            imgui.TableNextRow()
-            imgui.TableSetColumnIndex(0)
-            imgui.Text(result)
-        end
-        imgui.EndTable()
-        imgui.EndChild()
-    end
+function ui.drawBuySellTab()
+    ui.drawFilters()
+    ui.drawSearch()
+    ui.drawCommands()
+    --ui.drawPriceHistory()
+end
 
-    imgui.NewLine()
-    imgui.Text("Price")
-    imgui.SameLine()
-    imgui.SetNextItemWidth(-1)
-    changed = imgui.InputText("##SellPrice", sellPrice, 50)
-    changed = imgui.Checkbox("Stack", sellStack)
-    imgui.SameLine()
-    if imgui.Button("Sell") then
-        print("Selling with price: " .. sellPrice[1] .. ", Stack: " .. tostring(sellStack[1]))
-    end
-
-    imgui.NewLine()
-    imgui.Text("Price History")
-    if imgui.BeginTable("SellTable", 4, ImGuiTableFlags_ScrollY) then
+function ui.drawAuctionHouseTab()
+    if (auctioneer.auctionHouseInitialized == false) then
+        imgui.Text("Auction House not initialized.")
+        imgui.Text("Interact with it to initialize this tab.")
+    elseif imgui.BeginTable("AuctionHouse", 5, bit.bor(ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingStretchProp)) then
+        imgui.TableSetupColumn("Status")
+        imgui.TableSetupColumn("Item")
+        imgui.TableSetupColumn("Expires in")
         imgui.TableSetupColumn("Date")
-        imgui.TableSetupColumn("Seller")
-        imgui.TableSetupColumn("Buyer")
         imgui.TableSetupColumn("Price")
         imgui.TableHeadersRow()
 
-        for _, row in ipairs(sellTable) do
-            imgui.TableNextRow()
-            for colIndex, cell in ipairs(row) do
-                imgui.TableSetColumnIndex(colIndex - 1)
-                imgui.Text(cell)
+        for x = 0, 6 do
+            data = {}
+            data.status = auctioneer.AuctionHouse[x].status
+            if (data.status ~= "Expired") then
+                data.timer = auctioneer.AuctionHouse[x].status == "On auction" and
+                    auctioneer.AuctionHouse[x].timestamp + 829440 or auctioneer.AuctionHouse[x].timestamp
+                data.expiresIn = string.format("%s",
+                    (auctioneer.AuctionHouse[x].status == "On auction" and os.time() - data.timer > 0) and "Expired" or
+                    utils.timef(math.abs(os.time() - data.timer)))
+                data.date = os.date("%c", data.timer)
+                data.count = tostring(auctioneer.AuctionHouse[x].count)
+                data.item = auctioneer.AuctionHouse[x].item .. ' (' .. data.count .. ')'
+                data.price = utils.commaValue(auctioneer.AuctionHouse[x].price)
+                imgui.TableNextRow()
+
+                imgui.TableSetColumnIndex(0)
+                imgui.Text(data.status)
+
+                imgui.TableSetColumnIndex(1)
+                imgui.Text(data.item)
+
+                imgui.TableSetColumnIndex(2)
+                imgui.Text(data.expiresIn)
+
+                imgui.TableSetColumnIndex(3)
+                imgui.Text(data.date)
+
+                imgui.TableSetColumnIndex(4)
+                imgui.Text(data.price)
             end
         end
         imgui.EndTable()
@@ -225,20 +197,17 @@ end
 function ui.drawUI()
     if imgui.Begin("Auctioneer") then
         if imgui.BeginTabBar("MainTabs") then
-            if imgui.BeginTabItem("Buy") then
-                currentTab = "Buy"
-                ui.drawBuyTab()
+            if imgui.BeginTabItem("Buy & Sell") then
+                ui.drawBuySellTab()
                 imgui.EndTabItem()
             end
 
-            if imgui.BeginTabItem("Sell") then
-                currentTab = "Sell"
-                ui.drawSellTab()
+            if imgui.BeginTabItem("Auction House") then
+                ui.drawAuctionHouseTab()
                 imgui.EndTabItem()
             end
 
             if imgui.BeginTabItem("Settings") then
-                currentTab = "Settings"
                 ui.drawSettingsTab()
                 imgui.EndTabItem()
             end

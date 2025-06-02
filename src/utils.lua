@@ -24,6 +24,10 @@ function utils.getItemName(id)
     return AshitaCore:GetResourceManager():GetItemById(tonumber(id)).Name[1]
 end
 
+function utils.getItemById(id)
+    return AshitaCore:GetResourceManager():GetItemById(tonumber(id))
+end
+
 function utils.timef(ts)
     return string.format("%d days %.2d:%.2d:%.2d", ts / (60 * 60 * 24), ts / (60 * 60) % 24, ts / 60 % 60, ts % 60)
 end

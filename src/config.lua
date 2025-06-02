@@ -13,13 +13,8 @@ local default = T {
             color = 0x1A000000
         }
     },
-    auction_list = T {
-        visibility = true,
-        timer = true,
-        date = true,
-        price = true,
-        empty = true,
-        slot = true
+    ui = T {
+        visiblity = false,
     }
 }
 

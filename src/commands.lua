@@ -1,9 +1,11 @@
 commands = {}
 
+itemUtils = require("src/itemUtils")
+
 function commands.handleCommand(args)
     args[1] = string.lower(args[1])
     if (args[1] ~= "/ah" and args[1] ~= "/buy" and args[1] ~= "/sell" and args[1] ~= "/inbox" and args[1] ~= "/outbox" and
-        args[1] ~= "/ibox" and args[1] ~= "/obox") then
+            args[1] ~= "/ibox" and args[1] ~= "/obox") then
         return false
     end
 
@@ -16,7 +18,7 @@ function commands.handleCommand(args)
                 return true
             end
             if (auctionHouse.proposal(string.lower(args[1]), table.concat(args, " ", 2, #args - 2), args[#args - 1],
-                args[#args]) == true) then
+                    args[#args]) == true) then
                 lclock = now + 3
             end
             return true
@@ -59,18 +61,14 @@ function commands.handleCommand(args)
     args[2] = string.lower(args[2])
     if (args[2] == "show") then
         if (#args == 2) then
-            auctioneer.settings.auction_list.visibility = true
-        elseif auctioneer.settings.auction_list[string.lower(args[3])] ~= nil then
-            auctioneer.settings.auction_list[string.lower(args[3])] = true
+            auctioneer.settings.ui.visibility = true
+            settings.save()
         end
-        settings.save()
     elseif (args[2] == "hide") then
         if (#args == 2) then
-            auctioneer.settings.auction_list.visibility = false
-        elseif auctioneer.settings.auction_list[string.lower(args[3])] ~= nil then
-            auctioneer.settings.auction_list[string.lower(args[3])] = false
+            auctioneer.settings.ui.visibility = false
+            settings.save()
         end
-        settings.save()
     end
 
     return true
