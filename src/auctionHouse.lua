@@ -1,9 +1,34 @@
 local auctionHouse = {}
 
+auctionHouse.actions = { buy = 1, sell = 2 }
+
+function auctionHouse.updateAuctionHouse(packet)
+    local slot = packet:byte(0x05 + 1)
+    local status = packet:byte(0x14 + 1)
+    if (auctioneer.AuctionHouse ~= nil and slot ~= 7 and status ~= 0x02 and status ~= 0x04 and status ~= 0x10) then
+        if (status == 0x00) then
+            auctioneer.AuctionHouse[slot] = {}
+            auctioneer.AuctionHouse[slot].status = "Empty"
+        else
+            if (status == 0x03) then
+                auctioneer.AuctionHouse[slot].status = "On auction"
+            elseif (status == 0x0A or status == 0x0C or status == 0x15) then
+                auctioneer.AuctionHouse[slot].status = "Sold"
+            elseif (status == 0x0B or status == 0x0D or status == 0x16) then
+                auctioneer.AuctionHouse[slot].status = "Not Sold"
+            end
+            auctioneer.AuctionHouse[slot].item = utils.getItemName(struct.unpack("h", packet, 0x28 + 1))
+            auctioneer.AuctionHouse[slot].count = packet:byte(0x2A + 1)
+            auctioneer.AuctionHouse[slot].price = struct.unpack("i", packet, 0x2C + 1)
+            auctioneer.AuctionHouse[slot].timestamp = struct.unpack("i", packet, 0x38 + 1)
+        end
+    end
+end
+
 function auctionHouse.buy(item, single, price)
     local slot = auctionHouse.findEmptySlot() == nil and 0x07 or auctionHouse.findEmptySlot()
     local trans = struct.pack("bbxxihxx", 0x0E, slot, price, item.Id)
-    print(chat.header(addon.name):append(chat.message(string.format('/buy "%s" %s %s ID:%s', item.Name[0],
+    print(chat.header(addon.name):append(chat.message(string.format('/buy "%s" %s %s ID:%s', item.Name[1],
         utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id))))
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
     trans = trans:totable()
@@ -31,7 +56,7 @@ function auctionHouse.sell(item, single, price)
     end
 
     local trans = struct.pack("bxxxihh", 0x04, price, index, item.Id)
-    print(chat.header(addon.name):append(chat.message(string.format('/sell "%s" %s %s ID:%d Ind:%d', item.Name[0],
+    print(chat.header(addon.name):append(chat.message(string.format('/sell "%s" %s %s ID:%d Ind:%d', item.Name[1],
         utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id, index))))
 
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
@@ -65,11 +90,11 @@ function auctionHouse.clearSales()
     end
 end
 
-function auctionHouse.proposal(bid, name, vol, price)
-    name = AshitaCore:GetChatManager():ParseAutoTranslate(name, false)
-    local item = AshitaCore:GetResourceManager():GetItemByName(name, 2)
+function auctionHouse.proposal(action, itemName, single, price)
+    itemName = AshitaCore:GetChatManager():ParseAutoTranslate(itemName, false)
+    local item = resourceManager:GetItemByName(itemName, 2)
     if (item == nil) then
-        print(chat.header(addon.name):append(chat.message(string.format('AH Error: "%s" not a valid item name.', name))))
+        print(chat.header(addon.name):append(chat.message(string.format('AH Error: "%s" not a valid item name.', itemName))))
         return false
     end
 
@@ -79,11 +104,10 @@ function auctionHouse.proposal(bid, name, vol, price)
         return false
     end
 
-    local single
-    if (item.StackSize ~= 1) and (vol == "1" or vol == "stack") then
-        single = 0
-    elseif (vol == "0" or vol == "single") then
+    if (single == "0" or single == "single") then
         single = 1
+    elseif (item.StackSize ~= 1) and (single == "1" or single == "stack") then
+        single = 0
     else
         print(chat.header(addon.name):append(chat.message("AH Error: Specify single or stack.")))
         return false
@@ -91,16 +115,16 @@ function auctionHouse.proposal(bid, name, vol, price)
 
     price = price:gsub("%p", "")
     if (price == nil) or (string.match(price, "%a") ~= nil) or (tonumber(price) == nil) or (tonumber(price) < 1) or
-        (bid == "/sell" and tonumber(price) > 999999999) or
-        (bid == "/buy" and tonumber(price) > AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count) then
+        (action == auctionHouse.actions.sell and tonumber(price) > 999999999) or
+        (action == auctionHouse.actions.buy and tonumber(price) > AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count) then
         print(chat.header(addon.name):append(chat.message("AH Error: Invalid price.")))
         return false
     end
     price = tonumber(price)
 
-    if (bid == "/buy") then
+    if (action == auctionHouse.actions.buy) then
         return auctionHouse.buy(item, single, price)
-    elseif (bid == "/sell") then
+    elseif (action == auctionHouse.actions.sell) then
         return auctionHouse.sell(item, single, price)
     else
         print(chat.header(addon.name):append(chat.message("AH Error: Invalid bid type. Use /buy or /sell.")))

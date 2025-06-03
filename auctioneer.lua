@@ -9,6 +9,8 @@ require "common"
 settings = require("settings")
 chat = require("chat")
 imgui = require('imgui');
+ffi = require('ffi')
+d3d8 = require('d3d8')
 
 -- Local dependencies
 commands = require("src/commands")
@@ -21,6 +23,7 @@ zones = require("data/zones")
 itemIds = require("data/itemIds")
 itemFlags = require("data/itemFlags")
 categories = require("data/categories")
+jobs = require("data/jobs")
 resourceManager = AshitaCore:GetResourceManager()
 items = {}
 
@@ -36,8 +39,12 @@ for _, pair in ipairs(itemIds) do
 
         items[id].shortName = item.Name[1] or ""
         items[id].longName = item.LogNameSingular[1] or ""
-        items[id].description = item.description or ""
+        items[id].description = item.Description[1] or ""
         items[id].category = category
+        items[id].level = item.Level
+        items[id].jobs = item.Jobs
+        items[id].bitmap = item.Bitmap
+        items[id].imageSize = item.ImageSize
     end
 end
 

@@ -9,7 +9,7 @@ function commands.handleCommand(args)
         return false
     end
 
-    local zone = AshitaCore:GetResourceManager():GetString("zones.names",
+    local zone = resourceManager:GetString("zones.names",
         AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0))
     local now = os.clock()
     if (table.hasvalue(zones, zone) == true and (lclock == nil or lclock < now)) then
@@ -17,8 +17,12 @@ function commands.handleCommand(args)
             if (#args < 4) then
                 return true
             end
-            if (auctionHouse.proposal(string.lower(args[1]), table.concat(args, " ", 2, #args - 2), args[#args - 1],
-                    args[#args]) == true) then
+            local action = args[1] == "/buy" and auctionHouse.actions.buy or auctionHouse.actions.sell
+            local itemName = table.concat(args, " ", 2, #args - 2)
+            local single = args[#args - 1]
+            local price = args[#args]
+
+            if (auctionHouse.proposal(action, itemName, single, price) == true) then
                 lclock = now + 3
             end
             return true
@@ -37,17 +41,6 @@ function commands.handleCommand(args)
             AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, ibox)
             return true
         end
-
-        if (#args == 1 or string.lower(args[2]) == "menu") then
-            lclock = now + 3
-            AshitaCore:GetPacketManager():AddIncomingPacket(0x4C, struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00,
-                0x02, 0x00, 0x01, 0x00, 0x00):totable())
-            return true
-        elseif (string.lower(args[2]) == "clear") then
-            lclock = now + 3
-            auctionHouse.clearSales()
-            return true
-        end
     end
 
     if (args[1] ~= "/ah") then
@@ -55,7 +48,8 @@ function commands.handleCommand(args)
     end
 
     if (#args == 1) then
-        return false
+        auctioneer.settings.ui.visibility = not auctioneer.settings.uii.visibility
+        settings.save()
     end
 
     args[2] = string.lower(args[2])
@@ -69,6 +63,13 @@ function commands.handleCommand(args)
             auctioneer.settings.ui.visibility = false
             settings.save()
         end
+    elseif (args[2] == "clear") then
+        lclock = now + 3
+        auctionHouse.clearSales()
+    elseif (args[2] == "menu") then
+        lclock = now + 3
+        AshitaCore:GetPacketManager():AddIncomingPacket(0x4C,
+            struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00):totable())
     end
 
     return true

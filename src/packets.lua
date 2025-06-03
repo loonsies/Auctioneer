@@ -25,12 +25,12 @@ function packets.handleIncomingPacket(e)
                 if (auctioneer.AuctionHouse[e.data:byte(6)] == nil) then
                     auctioneer.AuctionHouse[e.data:byte(6)] = {}
                 end
-                packets.updateAuctionHouse(e.data)
+                auctionHouse.updateAuctionHouse(e.data)
                 auctioneer.auctionHouseInitialized = true
             end
         elseif (pType == 0x0B or pType == 0x0C or pType == 0x0D or pType == 0x10) then
             if (e.data:byte(7) == 0x01) then
-                packets.updateAuctionHouse(e.data)
+                auctionHouse.updateAuctionHouse(e.data)
                 auctioneer.auctionHouseInitialized = true
             end
         elseif (pType == 0x0E) then
@@ -47,29 +47,6 @@ function packets.handleIncomingPacket(e)
         end
     end
     return false
-end
-
-function packets.updateAuctionHouse(packet)
-    local slot = packet:byte(0x05 + 1)
-    local status = packet:byte(0x14 + 1)
-    if (auctioneer.AuctionHouse ~= nil and slot ~= 7 and status ~= 0x02 and status ~= 0x04 and status ~= 0x10) then
-        if (status == 0x00) then
-            auctioneer.AuctionHouse[slot] = {}
-            auctioneer.AuctionHouse[slot].status = "Empty"
-        else
-            if (status == 0x03) then
-                auctioneer.AuctionHouse[slot].status = "On auction"
-            elseif (status == 0x0A or status == 0x0C or status == 0x15) then
-                auctioneer.AuctionHouse[slot].status = "Sold"
-            elseif (status == 0x0B or status == 0x0D or status == 0x16) then
-                auctioneer.AuctionHouse[slot].status = "Not Sold"
-            end
-            auctioneer.AuctionHouse[slot].item = utils.getItemName(struct.unpack("h", packet, 0x28 + 1))
-            auctioneer.AuctionHouse[slot].count = packet:byte(0x2A + 1)
-            auctioneer.AuctionHouse[slot].price = struct.unpack("i", packet, 0x2C + 1)
-            auctioneer.AuctionHouse[slot].timestamp = struct.unpack("i", packet, 0x38 + 1)
-        end
-    end
 end
 
 return packets

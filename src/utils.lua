@@ -20,16 +20,88 @@ function utils.findItem(item_id, item_count)
     return nil
 end
 
+function utils.getItem(id)
+    return resourceManager:GetItemById(tonumber(id))
+end
+
 function utils.getItemName(id)
-    return AshitaCore:GetResourceManager():GetItemById(tonumber(id)).Name[1]
+    return resourceManager:GetItemById(tonumber(id)).Name[1]
 end
 
 function utils.getItemById(id)
-    return AshitaCore:GetResourceManager():GetItemById(tonumber(id))
+    return resourceManager:GetItemById(tonumber(id))
 end
 
 function utils.timef(ts)
     return string.format("%d days %.2d:%.2d:%.2d", ts / (60 * 60 * 24), ts / (60 * 60) % 24, ts / 60 % 60, ts % 60)
+end
+
+function utils.escapeString(str)
+    -- shamelessly stolen from Shinzaku's GearFinder
+    if str then
+        return str:
+        replace('\x81\x60', '~'):
+        replace('\xEF\x1F', 'Fire Res'):
+        replace('\xEF\x20', 'Ice Res'):
+        replace('\xEF\x21', 'Wind Res'):
+        replace('\xEF\x22', 'Earth Res'):
+        replace('\xEF\x23', 'Ltng Res'):
+        replace('\xEF\x24', 'Water Res'):
+        replace('\xEF\x25', 'Light Res'):
+        replace('\xEF\x26', 'Dark Res'):
+        replace('\x25', '%')
+    end
+
+    return ''
+end
+
+function utils.getJobs(bitfield)
+    if bitfield == 8388606 then
+        return T { 'All jobs' }
+    end
+
+    local jobList = T {}
+    for i = 1, 23 do
+        if bit.band(1, bit.rshift(bitfield, i)) == 1 then
+            table.insert(jobList, jobs[i])
+        end
+    end
+    return jobList
+end
+
+function utils.createTexture(bitmap, size)
+    local c = ffi.C
+    local texturePtr = ffi.new('IDirect3DTexture8*[1]')
+
+    local width = 0xFFFFFFFF
+    local height = 0xFFFFFFFF
+    local mipLevels = 1
+    local usage = 0
+    local colorKey = 0xFF000000
+    local gfxDevice = d3d8.get_device()
+
+    local textureSuccess = c.D3DXCreateTextureFromFileInMemoryEx(
+        gfxDevice,
+        bitmap,
+        size,
+        width,
+        height,
+        mipLevels,
+        usage,
+        c.D3DFMT_A8R8G8B8,
+        c.D3DPOOL_MANAGED,
+        c.D3DX_DEFAULT,
+        c.D3DX_DEFAULT,
+        colorKey,
+        nil,
+        nil,
+        texturePtr)
+
+    if textureSuccess == c.S_OK then
+        return d3d8.gc_safe_release(ffi.cast('IDirect3DTexture8*', texturePtr[0]))
+    else
+        return nil
+    end
 end
 
 return utils
