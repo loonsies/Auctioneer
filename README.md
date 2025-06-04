@@ -1,9 +1,10 @@
 # Auctioneer
-### Auction House Bidding Tool for Ashita
+### AH Tool for Ashita
 
 Auctioneer is an addon for Ashita v4 aiming to make auction house usage easier.
 
-***DISCLAIMER***
+***DISCLAIMER :***
+
 **While I tried my best to keep the addon safe to use, you are still sending packets outside of the normal conditions they're supposed to be sent in.
 Things like remote mailbox/AH access or slots clearing is not and will never be 100% safe. Outgoing packets are throttled to be sent every 8 seconds and queued if necessary.
 The rest depends on your usage. You are responsible for the usage of this addon.**
