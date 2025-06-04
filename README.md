@@ -1,15 +1,24 @@
 # Auctioneer
 ### Auction House Bidding Tool for Ashita
 
-Auctioneer is an addon for Ashita that enhances your auction house experience. It allows you to perform auction house actions via commands, display sales information, and customize your AH interface.
+Auctioneer is an addon for Ashita v4 aiming to make auction house usage easier.
+
+***DISCLAIMER***
+**While I tried my best to keep the addon safe to use, you are still sending packets outside of the normal conditions they're supposed to be sent in.
+Things like remote mailbox/AH access or slots clearing is not and will never be 100% safe. Outgoing packets are throttled to be sent every 8 seconds and queued if necessary.
+The rest depends on your usage. You are responsible for the usage of this addon.**
 
 ---
 
 ## Features
 - **Command-based Bidding and Selling**  
   Perform AH transactions quickly using simple commands.
+- **UI for transactions and sales monitoring**  
+  You can search for items using their names, filter by category (more filters to come), or preview the item directly in the UI. You can also monitor your sales from there.
 - **Inbox/Outbox Access**  
   Open your delivery boxes directly with commands.
+- **Remote AH access and slots clearing**  
+  You can clear your slots remotely, as well as accessing the auction house remotely (like with ahgo)
 
 ---
 
@@ -47,10 +56,3 @@ Auctioneer is an addon for Ashita that enhances your auction house experience. I
 ### Auction House Menu Commands
 - **Open AH Menu:** `ah menu`  
 - **Clear Sold/Unsold Status:** `ah clear`
-
-
----
-
-## Additional Notes
-- Check the settings file for further customization options.
-- After game updates or maintenance, ensure Ashita's resources are updated for new items.
