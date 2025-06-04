@@ -1,5 +1,5 @@
 addon.name = "Auctioneer"
-addon.version = "1.18"
+addon.version = "2.0"
 addon.author = "Original addon by Ivaar, ported and modified by melones"
 addon.desc = 'Interact with auction house using commands.';
 addon.link = 'https://github.com/senolem/auctioneer';
