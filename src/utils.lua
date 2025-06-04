@@ -13,7 +13,7 @@ function utils.findItem(item_id, item_count)
     local items = AshitaCore:GetMemoryManager():GetInventory()
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
-        if (item ~= nil and item.Id == item_id and item.Flags == 0 and item.Count >= item_count) then
+        if item ~= nil and item.Id == item_id and item.Flags == 0 and item.Count >= item_count then
             return item.Index
         end
     end
@@ -69,7 +69,7 @@ function utils.getJobs(bitfield)
     return jobList
 end
 
-function utils.createTexture(bitmap, size)
+function utils.createTextureFromGame(bitmap, size)
     local c = ffi.C
     local texturePtr = ffi.new('IDirect3DTexture8*[1]')
 
@@ -102,6 +102,33 @@ function utils.createTexture(bitmap, size)
     else
         return nil
     end
+end
+
+function utils.createTextureFromFile(path)
+    if (path ~= nil) then
+        local dx_texture_ptr = ffi.new('IDirect3DTexture8*[1]');
+        local d3d8_device = d3d8.get_device()
+        if (ffi.C.D3DXCreateTextureFromFileA(d3d8_device, path, dx_texture_ptr) == ffi.C.S_OK) then
+            local texture = d3d8.gc_safe_release(ffi.cast('IDirect3DTexture8*', dx_texture_ptr[0]));
+            local result, desc = texture:GetLevelDesc(0);
+            if result == 0 then
+                tx = {};
+                tx.Texture = texture;
+                tx.Width   = desc.Width;
+                tx.Height  = desc.Height;
+                return tx;
+            end
+            return;
+        end
+    end
+end
+
+function utils.rgbaToU32(r, g, b, a)
+    local function to255(x) return math.floor(x * 255 + 0.5) end
+    return bit32.lshift(to255(a), 24)
+         + bit32.lshift(to255(b), 16)
+         + bit32.lshift(to255(g), 8)
+         + to255(r)
 end
 
 return utils

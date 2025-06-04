@@ -19,12 +19,14 @@ ui = require("src/ui")
 packets = require("src/packets")
 auctionHouse = require("src/auctionHouse")
 utils = require("src/utils")
+task = require("src/task")
 zones = require("data/zones")
 itemIds = require("data/itemIds")
 itemFlags = require("data/itemFlags")
 categories = require("data/categories")
 jobs = require("data/jobs")
 resourceManager = AshitaCore:GetResourceManager()
+packetManager = AshitaCore:GetPacketManager()
 items = {}
 
 for _, pair in ipairs(itemIds) do
@@ -49,7 +51,7 @@ for _, pair in ipairs(itemIds) do
 end
 
 auctioneer = {
-    settings = config.load(),
+    config = config.load(),
     AuctionHouse = nil,
     auctionHouseInitialized = false
 }
@@ -64,7 +66,7 @@ end)
 
 ashita.events.register("command", "command_cb", function(cmd, nType)
     local args = cmd.command:args()
-    if (#args ~= 0) then
+    if #args ~= 0 then
         commands.handleCommand(args)
     end
 end)

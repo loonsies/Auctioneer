@@ -10,7 +10,7 @@ function itemUtils.exportData()
     local csvContent = 'Name\n'
     local filePath = ('%s\\addons\\' .. addon.name .. '\\items.csv'):fmt(AshitaCore:GetInstallPath())
     local file = io.open(filePath, 'w+');
-    if (file == nil) then
+    if file == nil then
         print(chat.header(addon.name):append(chat.error('Could not write to file ' .. file)));
         return;
     end
@@ -25,7 +25,7 @@ function itemUtils.exportData()
             csvContent = csvContent ..
                 string.format('%s, %s, %s, %s, %s\n', itemId, shortName, longName, category, item.ResourceId)
         else
-            print(chat.header(addon.name):append(chat.success('Item not found for ID:' .. itemId)))
+            print(chat.header(addon.name):append(chat.error('Item not found for ID:' .. itemId)))
         end
     end
 
