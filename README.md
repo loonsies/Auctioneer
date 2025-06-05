@@ -1,21 +1,34 @@
 # Auctioneer
-### Auction House Bidding Tool for Ashita
+### AH Tool for Ashita
 
-Auctioneer is an addon for Ashita that enhances your auction house experience. It allows you to perform auction house actions via commands, display sales information, and customize your AH interface.
+Auctioneer is an addon for Ashita v4 aiming to make auction house usage easier.
+
+***DISCLAIMER :***
+
+**While I tried my best to keep the addon safe to use, you are still sending packets outside of the normal conditions they're supposed to be sent in.
+Things like remote mailbox/AH access or slots clearing is not and will never be 100% safe. Outgoing packets are throttled to be sent every 8 seconds and queued if necessary.
+The rest depends on your usage. You are responsible for the usage of this addon.**
 
 ---
 
 ## Features
 - **Command-based Bidding and Selling**  
   Perform AH transactions quickly using simple commands.
-- **Sales Information Display**  
-  View sales details in a customizable text object when opening the AH menu.
+- **UI for transactions and sales monitoring**  
+  You can search for items using their names, filter by category (more filters to come), or preview the item directly in the UI. You can also monitor your sales from there.
 - **Inbox/Outbox Access**  
   Open your delivery boxes directly with commands.
+- **Remote AH access and slots clearing**  
+  You can clear your slots remotely, as well as accessing the auction house remotely (like with ahgo)
 
 ---
 
 ## Commands
+
+### Auctioneer
+- **Toggle UI:** `ah`
+- **Show Auctioneer UI:** `ah show`
+- **Hide Auctioneer UI:** `ah hide`
 
 ### Buying and Selling
 - **Buy Items**  
@@ -42,29 +55,5 @@ Auctioneer is an addon for Ashita that enhances your auction house experience. I
 ---
 
 ### Auction House Menu Commands
-- **Open AH Menu:** `ah`  
-- **Clear Sold/Unsold Status:** `ah clear`  
-
-### Text Object Customization
-Control what information appears in the AH sales text object:  
-- `ah show` or `ah hide`  
-  Customize display options using:  
-  - `timer`: Countdown/up timer.  
-  - `date`: Auction end or sale/return date and time.  
-  - `price`: Asking price.  
-  - `empty`: Show/hide empty slots.  
-  - `slot`: Display normalized slot numbers. 
-
----
-
-## Additional Notes
-- Check the settings file for further customization options.
-- After game updates or maintenance, ensure Ashita's resources are updated for new items.
-
----
-
-## To-Do List
-1. Add UI interface including search bar with list, filters, etc.
-2. Expand delivery box functionality to other zones (e.g., Mog House).  
-3. Block sell confirmation when injecting sell packets (occurs within the sell menu).  
-4. Adjust delays for smoother performance.
+- **Open AH Menu:** `ah menu`  
+- **Clear Sold/Unsold Status:** `ah clear`
