@@ -1,5 +1,6 @@
 local ui = {}
 
+local quantityInput = { "1" }
 local priceInput = { "" }
 local stack = { false }
 
@@ -22,6 +23,10 @@ search.startup = true
 local preview = {}
 preview.textureCache = {}
 preview.itemBackground = nil
+
+local modal = {
+    visible = false
+}
 
 function ui.update()
     if not auctioneer.visible[1] then
@@ -69,6 +74,39 @@ function ui.drawGlobalCommands()
     imgui.SameLine()
     if imgui.Button("Clear Sales") then
         commands.handleCommand({ "/ah", "clear" })
+    end
+end
+
+function ui.drawConfirmationModal()
+    if not modal.visible then
+        return
+    end
+
+    imgui.SetNextWindowSize({ 0, 0 }, ImGuiCond_Always)
+    imgui.OpenPopup("Confirm transaction")
+
+    if imgui.BeginPopupModal("Confirm transaction", nil, ImGuiWindowFlags_AlwaysAutoResize) then
+        name, single, price, quantity = table.unpack(modal.args)
+
+        imgui.Text("Are you sure you want to proceed with this transaction?")
+        imgui.Separator()
+        imgui.Text(string.format("%s %s of %s for %s", auctionHouse.actions[modal.action],
+            single == "1" and "Single" or "Stack", name, price))
+        imgui.Text(string.format("This task will be executed %s times", quantity))
+        if imgui.Button("OK", { 120, 0 }) then
+            if auctionHouse.proposal(modal.action, name, single, price, quantity) then
+                quantityInput = { "1" }
+            end
+            modal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+        imgui.SameLine()
+        if imgui.Button("Cancel", { 120, 0 }) then
+            modal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+
+        imgui.EndPopup()
     end
 end
 
@@ -164,6 +202,10 @@ function ui.drawItemPreview()
 end
 
 function ui.drawBuySellCommands()
+    imgui.Text("Quantity")
+    imgui.SameLine()
+    imgui.InputText("##Quantity", quantityInput, 3)
+    imgui.SameLine()
     imgui.Text("Price")
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
@@ -176,8 +218,23 @@ function ui.drawBuySellCommands()
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
         else
-            commands.handleCommand({ "/buy", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput
-                [1] })
+            if auctioneer.config.confirmationPopup[1] then
+                if not modal.visible then
+                    modal.visible = true
+                    modal.action = auctionHouse.actions.buy
+                    modal.args = {
+                        items[search.selectedItem].shortName,
+                        stack[1] and "1" or "0",
+                        priceInput[1],
+                        quantityInput[1],
+                    }
+                end
+            else
+                if auctionHouse.proposal(auctionHouse.actions.buy, items[search.selectedItem].shortName,
+                        stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
+                    quantityInput = { "1" }
+                end
+            end
         end
     end
     imgui.SameLine()
@@ -187,8 +244,23 @@ function ui.drawBuySellCommands()
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
         else
-            commands.handleCommand({ "/sell", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput
-                [1] })
+            if auctioneer.config.confirmationPopup[1] then
+                if not modal.visible then
+                    modal.visible = true
+                    modal.action = auctionHouse.actions.sell
+                    modal.args = {
+                        items[search.selectedItem].shortName,
+                        stack[1] and "1" or "0",
+                        priceInput[1],
+                        quantityInput[1],
+                    }
+                end
+            else
+                if auctionHouse.proposal(auctionHouse.actions.sell, items[search.selectedItem].shortName,
+                        stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
+                    quantityInput = { "1" }
+                end
+            end
         end
     end
 end
@@ -278,11 +350,13 @@ function ui.drawAuctionHouseTab()
 end
 
 function ui.drawSettingsTab()
-    imgui.Text("Settings Placeholder")
+    if imgui.Checkbox("Enable transaction confirmation popup", auctioneer.config.confirmationPopup) then
+        settings.save()
+    end
 end
 
 function ui.drawUI()
-    if imgui.Begin("Auctioneer", auctioneer.config.ui.visible) then
+    if imgui.Begin("Auctioneer", auctioneer.visible) then
         if imgui.BeginTabBar("MainTabs") then
             if imgui.BeginTabItem("Buy & Sell") then
                 ui.drawBuySellTab()
@@ -300,6 +374,7 @@ function ui.drawUI()
             end
             imgui.EndTabBar()
         end
+        ui.drawConfirmationModal()
         imgui.End()
     end
 end

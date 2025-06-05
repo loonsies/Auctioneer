@@ -7,7 +7,11 @@ task.type = {
     buy = 1,
     sell = 2,
     confirmSell = 3,
-    clearSlot = 4
+    clearSlot = 4,
+    [1] = "Buy",
+    [2] = "Sell",
+    [3] = "Confirm sell",
+    [4] = "Clear slot"
 }
 
 local function handleEntry(entry)
@@ -34,6 +38,15 @@ local function handleEntry(entry)
     end
 end
 
+local function handleQueue()
+    while #queue > 0 and os.clock() > throttle_timer do
+        handleEntry(queue[1])
+        for i = 1, #queue do
+            queue[i] = queue[i + 1]
+        end
+    end
+end
+
 function task.clear()
     queue = {}
 end
@@ -46,18 +59,16 @@ function task.enqueue(entry)
         queue[queueCount + 1] = entry
         local delay = (throttle_interval * queueCount) + (throttle_timer - os.clock())
         print(chat.header(addon.name):append(chat.warning(
-            string.format('%s task throttled, will run in %.2f seconds (queue position %d).', entry.type, delay,
+            string.format('%s task throttled, will run in %.2f seconds (queue position %d).', task.type[entry.type],
+                delay,
                 queueCount + 1)
         )))
     end
 end
 
 ashita.events.register("packet_out", "packet_out_cb", function(e)
-    while #queue > 0 and os.clock() > throttle_timer do
-        handleEntry(queue[1])
-        for i = 1, #queue do
-            queue[i] = queue[i + 1]
-        end
+    if (e.id == 0x15) then
+        handleQueue();
     end
 end)
 

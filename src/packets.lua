@@ -14,11 +14,12 @@ function packets.handleIncomingPacket(e)
                     last4E:byte(17), 0x00, 0x00):totable()
                 last4E = nil
 
-                entry = {
-                    type = task.type.confirmSell,
-                    packet = packet
-                }
-                task.enqueue(entry)
+                --entry = {
+                --    type = task.type.confirmSell,
+                --    packet = packet
+                --}
+                --task.enqueue(entry)
+                auctionHouse.sendConfirmSell(packet)
             end
         elseif pType == 0x0A then
             if e.data:byte(7) == 0x01 then
