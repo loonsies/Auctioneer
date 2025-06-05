@@ -11,6 +11,9 @@ chat = require("chat")
 imgui = require('imgui');
 ffi = require('ffi')
 d3d8 = require('d3d8')
+http = require("socket.http")
+ltn12 = require("socket.ltn12")
+json = require("json")
 resourceManager = AshitaCore:GetResourceManager()
 packetManager = AshitaCore:GetPacketManager()
 memoryManager = AshitaCore:GetMemoryManager()
@@ -23,11 +26,13 @@ packets = require("src/packets")
 auctionHouse = require("src/auctionHouse")
 utils = require("src/utils")
 task = require("src/task")
+ffxiah = require("src/ffxiah")
 zones = require("data/zones")
 itemIds = require("data/itemIds")
 itemFlags = require("data/itemFlags")
 categories = require("data/categories")
 jobs = require("data/jobs")
+servers = require("data/servers")
 items = {}
 
 for _, pair in ipairs(itemIds) do
@@ -55,7 +60,11 @@ auctioneer = {
     config = config.load(),
     visible = { false },
     AuctionHouse = nil,
-    auctionHouseInitialized = false
+    auctionHouseInitialized = false,
+    priceHistory = {
+        sales = nil,
+        fetching = false
+    }
 }
 
 ashita.events.register("unload", "unload_cb", function()

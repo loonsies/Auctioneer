@@ -2,7 +2,8 @@ local config = {}
 
 local default = T {
     confirmationPopup = { true },
-    duplicatePopup = { true }
+    duplicatePopup = { true },
+    server = { 1 }
 }
 
 config.load = function()
