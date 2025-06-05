@@ -10,7 +10,7 @@ function utils.hasFlag(n, flag)
 end
 
 function utils.findItem(item_id, item_count)
-    local items = AshitaCore:GetMemoryManager():GetInventory()
+    local items = memoryManager:GetInventory()
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
         if item ~= nil and item.Id == item_id and item.Flags == 0 and item.Count >= item_count then
@@ -112,7 +112,7 @@ function utils.createTextureFromFile(path)
             local texture = d3d8.gc_safe_release(ffi.cast('IDirect3DTexture8*', dx_texture_ptr[0]));
             local result, desc = texture:GetLevelDesc(0);
             if result == 0 then
-                tx = {};
+                tx         = {};
                 tx.Texture = texture;
                 tx.Width   = desc.Width;
                 tx.Height  = desc.Height;
@@ -125,10 +125,10 @@ end
 
 function utils.rgbaToU32(r, g, b, a)
     local function to255(x) return math.floor(x * 255 + 0.5) end
-    return bit32.lshift(to255(a), 24)
-         + bit32.lshift(to255(b), 16)
-         + bit32.lshift(to255(g), 8)
-         + to255(r)
+    return bit.lshift(to255(a), 24)
+        + bit.lshift(to255(b), 16)
+        + bit.lshift(to255(g), 8)
+        + to255(r)
 end
 
 return utils

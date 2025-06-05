@@ -1,6 +1,11 @@
 local auctionHouse = {}
 
-auctionHouse.actions = { buy = 1, sell = 2 }
+auctionHouse.actions = {
+    buy = 1,
+    sell = 2,
+    [1] = "Buy",
+    [2] = "Sell"
+}
 
 function auctionHouse.updateAuctionHouse(packet)
     local slot = packet:byte(0x05 + 1)
@@ -33,10 +38,15 @@ function auctionHouse.buy(item, single, price)
 
     local slot = auctionHouse.findEmptySlot() == nil and 0x07 or auctionHouse.findEmptySlot()
     local trans = struct.pack("bbxxihxx", 0x0E, slot, price, item.Id)
-    print(chat.header(addon.name):append(chat.color2(200, (string.format('/buy "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id)))))
+    local command = string.format('/buy "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price),
+        single == 1 and "[Single]" or "[Stack]", item.Id)
+
+
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
     packet = trans:totable()
-    task.throttle(string.format('Buy "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id), task.packet, packet)
+
+    print(chat.header(addon.name):append(chat.color2(200, command)))
+    packetManager:AddOutgoingPacket(0x4E, packet)
     return true
 end
 
@@ -59,13 +69,24 @@ function auctionHouse.sell(item, single, price)
     end
 
     local trans = struct.pack("bxxxihh", 0x04, price, index, item.Id)
-    print(chat.header(addon.name):append(chat.color2(200, (string.format('/sell "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id, index)))))
+    local command = string.format('/sell "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price),
+        single == 1 and "[Single]" or "[Stack]", item.Id, index)
 
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
     last4E = trans
-    packet = trans:totable()
-    task.throttle(string.format('Sell "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price), single == 1 and "[Single]" or "[Stack]", item.Id), task.packet, packet)
+    local packet = trans:totable()
+
+    print(chat.header(addon.name):append(chat.color2(200, command)))
+    packetManager:AddOutgoingPacket(0x4E, packet)
     return true
+end
+
+function auctionHouse.sendConfirmSell(packet)
+    if packet ~= nil then
+        packetManager:AddOutgoingPacket(0x4E, packet)
+        return true
+    end
+    return false
 end
 
 function auctionHouse.findEmptySlot()
@@ -80,24 +101,46 @@ function auctionHouse.findEmptySlot()
 end
 
 function auctionHouse.clearSales()
+    cleared = false
     if auctioneer.AuctionHouse == nil then
-        print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu to initialize sales")))
+        print(chat.header(addon.name):append(chat.error(
+            "Interact with auction house or use /ah menu to initialize sales")))
         return false
     end
     for slot = 0, 6 do
         if auctioneer.AuctionHouse[slot] ~= nil then
             if auctioneer.AuctionHouse[slot].status == "Sold" or auctioneer.AuctionHouse[slot].status == "Not Sold" then
-                print(chat.header(addon.name):append(chat.color2(200, string.format('Slot %i (%s): clearing...', slot + 1, auctioneer.AuctionHouse[slot].status))))
-                local packet = struct.pack("bbxxbbi32i22", 0x4E, 0x1E, 0x10, slot, 0x00, 0x00):totable()
-                task.throttle("Clear sales", task.packet, packet)
+                entry = {
+                    type = task.type.clearSlot,
+                    slot = slot
+                }
+                task.enqueue(entry)
             else
-                print(chat.header(addon.name):append(chat.color2(200, string.format('Slot %i (%s): no need to clear', slot + 1, auctioneer.AuctionHouse[slot].status))))
+                print(chat.header(addon.name):append(chat.color2(200,
+                    string.format('Slot %i (%s): no need to clear', slot + 1, auctioneer.AuctionHouse[slot].status))))
             end
         end
     end
+    return true
 end
 
-function auctionHouse.proposal(action, itemName, single, price)
+function auctionHouse.clearSlot(slot)
+    if slot == nil or slot < 0 or slot > 6 then
+        print(chat.header(addon.name):append(chat.error("Invalid slot number")))
+    end
+
+    print(chat.header(addon.name):append(chat.color2(200,
+        string.format('Slot %i (%s): clearing...', slot + 1, auctioneer.AuctionHouse[slot].status))))
+    local packet = struct.pack("bbxxbbi32i22", 0x4E, 0x1E, 0x10, slot, 0x00, 0x00):totable()
+    packetManager:AddOutgoingPacket(0x4E, packet)
+end
+
+function auctionHouse.proposal(action, itemName, single, price, quantity)
+    if action == nil or (action ~= auctionHouse.actions.buy and action ~= auctionHouse.actions.sell) then
+        print(chat.header(addon.name):append(chat.error("Invalid action type")))
+        return false
+    end
+
     itemName = AshitaCore:GetChatManager():ParseAutoTranslate(itemName, false)
     local item = resourceManager:GetItemByName(itemName, 2)
     if item == nil then
@@ -120,19 +163,38 @@ function auctionHouse.proposal(action, itemName, single, price)
         return false
     end
 
+    quantity = tonumber(quantity) or 1
+    if quantity == nil or quantity < 1 or (action == auctionHouse.actions.sell and quantity > 7) then
+        print(chat.header(addon.name):append(chat.error("Invalid quantity")))
+        return false
+    end
+
     price = price:gsub("%p", "")
     if price == nil or string.match(price, "%a") ~= nil or tonumber(price) == nil or tonumber(price) < 1 or
         action == auctionHouse.actions.sell and tonumber(price) > 999999999 or
-        action == auctionHouse.actions.buy and tonumber(price) > AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count then
+        action == auctionHouse.actions.buy and tonumber(price) > memoryManager:GetInventory():GetContainerItem(0, 0).Count then
         print(chat.header(addon.name):append(chat.error("Invalid price")))
         return false
     end
     price = tonumber(price)
 
+    entry = {
+        type = action == auctionHouse.actions.buy and task.type.buy or auctionHouse.actions.sell,
+        item = item,
+        single = single,
+        price = price
+    }
+
     if action == auctionHouse.actions.buy then
-        return auctionHouse.buy(item, single, price)
+        for i = 1, quantity do
+            task.enqueue(entry)
+        end
+        return true
     elseif action == auctionHouse.actions.sell then
-        return auctionHouse.sell(item, single, price)
+        for i = 1, quantity do
+            task.enqueue(entry)
+        end
+        return true
     else
         print(chat.header(addon.name):append(chat.error("Invalid bid type. Use /buy or /sell")))
         return false

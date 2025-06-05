@@ -8,12 +8,18 @@ function packets.handleIncomingPacket(e)
             local fee = struct.unpack("i", e.data, 9)
             if last4E ~= nil and e.data:byte(7) == 0x01 and slot ~= nil and last4E ~= nil and last4E:byte(5) == 0x04 and
                 e.data:sub(13, 17) == last4E:sub(13, 17) and
-                AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count >= fee then
+                memoryManager:GetInventory():GetContainerItem(0, 0).Count >= fee then
                 local packet = struct.pack("bbxxbbxxbbbbbbxxbi32i11", 0x4E, 0x1E, 0x0B, slot, last4E:byte(9),
                     last4E:byte(10), last4E:byte(11), last4E:byte(12), e.data:byte(13), e.data:byte(14),
                     last4E:byte(17), 0x00, 0x00):totable()
                 last4E = nil
-                task.throttle("Sell confirm", task.packet, packet)
+
+                --entry = {
+                --    type = task.type.confirmSell,
+                --    packet = packet
+                --}
+                --task.enqueue(entry)
+                auctionHouse.sendConfirmSell(packet)
             end
         elseif pType == 0x0A then
             if e.data:byte(7) == 0x01 then
