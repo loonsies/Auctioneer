@@ -1,9 +1,8 @@
 local config = {}
 
 local default = T {
-    ui = T {
-        visible = { true },
-    }
+    confirmationPopup = { true },
+    duplicatePopup = { true }
 }
 
 config.load = function()

@@ -11,6 +11,9 @@ chat = require("chat")
 imgui = require('imgui');
 ffi = require('ffi')
 d3d8 = require('d3d8')
+resourceManager = AshitaCore:GetResourceManager()
+packetManager = AshitaCore:GetPacketManager()
+memoryManager = AshitaCore:GetMemoryManager()
 
 -- Local dependencies
 commands = require("src/commands")
@@ -25,8 +28,6 @@ itemIds = require("data/itemIds")
 itemFlags = require("data/itemFlags")
 categories = require("data/categories")
 jobs = require("data/jobs")
-resourceManager = AshitaCore:GetResourceManager()
-packetManager = AshitaCore:GetPacketManager()
 items = {}
 
 for _, pair in ipairs(itemIds) do
@@ -52,6 +53,7 @@ end
 
 auctioneer = {
     config = config.load(),
+    visible = { false },
     AuctionHouse = nil,
     auctionHouseInitialized = false
 }

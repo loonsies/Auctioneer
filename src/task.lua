@@ -1,52 +1,64 @@
 task = {}
-
-local last_run_time = 0
-local task_queue = {}
+local queue = {}
+local throttle_timer = 0
 local throttle_interval = 8
 
-function task.packet(packet)
-    packetManager:AddOutgoingPacket(0x4E, packet)
+task.type = {
+    buy = 1,
+    sell = 2,
+    confirmSell = 3,
+    clearSlot = 4
+}
+
+local function handleEntry(entry)
+    --Could do validation on whether player has stepped away from AH or zoned here if desired, or check other things like that
+
+    if entry.type == task.type.buy then
+        if auctionHouse.buy(entry.item, entry.single, entry.price) then
+            throttle_timer = os.clock() + throttle_interval
+        end
+    elseif entry.type == task.type.sell then
+        if auctionHouse.sell(entry.item, entry.single, entry.price) then
+            throttle_timer = os.clock() + throttle_interval
+        end
+    elseif entry.type == task.type.confirmSell then
+        if auctionHouse.sendConfirmSell(entry.packet) then
+            throttle_timer = os.clock() + throttle_interval
+        end
+    elseif entry.type == task.type.clearSlot then
+        if auctionHouse.clearSlot(entry.slot) then
+            throttle_timer = os.clock() + throttle_interval
+        end
+    else
+        print(chat.header(addon.name):append(chat.error("Invalid task type")))
+    end
 end
 
-function task.throttle(task_name, task_func, task_arg)
-    local current_time = os.clock()
-    local elapsed = current_time - last_run_time
+function task.clear()
+    queue = {}
+end
 
-    if elapsed >= throttle_interval then
-        last_run_time = current_time
-        task_func(task_arg)
-        task.processQueue()
+function task.enqueue(entry)
+    local queueCount = #queue
+    if queueCount == 0 and os.clock() > throttle_timer then
+        handleEntry(entry)
     else
-        local wait_time = throttle_interval - elapsed
-        local position_in_queue = #task_queue + 1
-        local estimated_delay = wait_time + ((position_in_queue - 1) * throttle_interval)
-
+        queue[queueCount + 1] = entry
+        local delay = (throttle_interval * queueCount) + (throttle_timer - os.clock())
         print(chat.header(addon.name):append(chat.warning(
-            string.format('%s task throttled, will run in %.2f seconds (queue position %d).', task_name, estimated_delay, position_in_queue)
+            string.format('%s task throttled, will run in %.2f seconds (queue position %d).', entry.type, delay,
+                queueCount + 1)
         )))
-
-        table.insert(task_queue, { name = task_name, func = task_func, arg = task_arg })
     end
 end
 
-function task.processQueue()
-    if #task_queue == 0 then return end
-
-    local current_time = os.clock()
-    local elapsed = current_time - last_run_time
-
-    if elapsed >= throttle_interval then
-        local next = table.remove(task_queue, 1)
-        last_run_time = current_time
-
-        print(chat.header(addon.name):append(chat.color2(200, string.format('Running %s', next.name))))
-        next.func(next.arg)
-
-        ashita.tasks.once(throttle_interval, task.processQueue)
-    else
-        local delay = throttle_interval - elapsed
-        ashita.tasks.once(delay, task.processQueue)
+ashita.events.register("packet_out", "packet_out_cb", function(e)
+    while #queue > 0 and os.clock() > throttle_timer do
+        handleEntry(queue[1])
+        for i = 1, #queue do
+            queue[i] = queue[i + 1]
+        end
     end
-end
+end)
 
 return task

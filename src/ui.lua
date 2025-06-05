@@ -24,7 +24,7 @@ preview.textureCache = {}
 preview.itemBackground = nil
 
 function ui.update()
-    if not auctioneer.config.ui.visible[1] then
+    if not auctioneer.visible[1] then
         return
     end
 
@@ -125,7 +125,8 @@ function ui.drawItemPreview()
             local iconSize = 40
 
             if preview.itemBackground == nil then
-                local path = string.format('%saddons/%s/resources/%s', AshitaCore:GetInstallPath(), addon.name, 'item.png')
+                local path = string.format('%saddons/%s/resources/%s', AshitaCore:GetInstallPath(), addon.name,
+                    'item.png')
                 preview.itemBackground = utils.createTextureFromFile(path)
                 preview.itemBackground.Pointer = tonumber(ffi.cast('uint32_t', preview.itemBackground.Texture))
             end
@@ -140,9 +141,9 @@ function ui.drawItemPreview()
             imgui.Dummy({ 0, 4 })
 
             local posX, posY = imgui.GetCursorScreenPos()
-            imgui.Image(preview.itemBackground.Pointer, {iconSize, iconSize})
+            imgui.Image(preview.itemBackground.Pointer, { iconSize, iconSize })
             imgui.SetCursorScreenPos({ posX, posY })
-            imgui.Image(iconPointer, {iconSize, iconSize})
+            imgui.Image(iconPointer, { iconSize, iconSize })
 
             imgui.EndGroup()
             imgui.SameLine()
@@ -175,7 +176,8 @@ function ui.drawBuySellCommands()
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
         else
-            commands.handleCommand({ "/buy", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput[1]})
+            commands.handleCommand({ "/buy", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput
+                [1] })
         end
     end
     imgui.SameLine()
@@ -185,7 +187,8 @@ function ui.drawBuySellCommands()
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
         else
-            commands.handleCommand({ "/sell", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput[1]})
+            commands.handleCommand({ "/sell", items[search.selectedItem].shortName, stack[1] and "1" or "0", priceInput
+                [1] })
         end
     end
 end
@@ -239,7 +242,7 @@ function ui.drawAuctionHouseTab()
                 data.status = auctioneer.AuctionHouse[x].status
                 if data.status ~= "Expired" and data.status ~= "Empty" then
                     data.timer = auctioneer.AuctionHouse[x].status == "On auction" and
-                    auctioneer.AuctionHouse[x].timestamp + 829440 or auctioneer.AuctionHouse[x].timestamp
+                        auctioneer.AuctionHouse[x].timestamp + 829440 or auctioneer.AuctionHouse[x].timestamp
                     data.expiresIn = string.format("%s",
                         (auctioneer.AuctionHouse[x].status == "On auction" and os.time() - data.timer > 0) and "Expired" or
                         utils.timef(math.abs(os.time() - data.timer)))
@@ -263,7 +266,7 @@ function ui.drawAuctionHouseTab()
 
                     imgui.TableSetColumnIndex(4)
                     imgui.Text(data.price)
-                    elseif data.status == "Empty" then
+                elseif data.status == "Empty" then
                     imgui.TableNextRow()
                     imgui.TableSetColumnIndex(0)
                     imgui.Text(data.status)
