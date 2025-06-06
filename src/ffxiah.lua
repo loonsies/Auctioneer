@@ -41,6 +41,7 @@ local function fetchUrlAsync(url, callback, maxRedirects)
                 url = location
                 redirects = redirects + 1
             else
+                csvContent = body
                 callback(body, statusCode, headers)
                 return
             end
@@ -50,35 +51,85 @@ local function fetchUrlAsync(url, callback, maxRedirects)
     end)()
 end
 
+local function handleJsonField(body, fieldName, id, processFn)
+    local jsonStr = body:match("Item%." .. fieldName .. "%s*=%s*(null)%s*;")
+        or body:match("Item%." .. fieldName .. "%s*=%s*(%[.-%])%s*;")
+    if not jsonStr then
+        print(chat.header(addon.name):append(chat.error("Failed to extract Item." .. fieldName .. " array")))
+        return nil, true
+    end
+
+    local ok, tbl = pcall(json.decode, jsonStr)
+    if not ok then
+        print(chat.header(addon.name):append(chat.error("Failed to decode " .. fieldName .. " JSON")))
+        return nil, true
+    end
+
+    if tbl == nil or type(tbl) ~= "table" or #tbl == 0 then
+        print(chat.header(addon.name):append(chat.message(string.format("No %s data for item [%i]", fieldName, id))))
+        return {}, false
+    end
+
+    return processFn(tbl), false
+end
+
 function ffxiah.fetchSales(id)
     local url = "https://www.ffxiah.com/item/" .. tostring(id)
 
-    fetchUrlAsync(url, function(body, status, headers)
-        local salesJson = body:match("Item%.sales%s*=%s*(%[.-%])%s*;")
-        if not salesJson then
+    fetchUrlAsync(url, function(body)
+        local sales, err = handleJsonField(body, "sales", id, function(salesTable)
+            local formatted = {}
+            for _, sale in ipairs(salesTable) do
+                table.insert(formatted, {
+                    date = os.date("%Y-%m-%d %H:%M:%S", sale.saleon),
+                    seller = sale.seller_name or "",
+                    buyer = sale.buyer_name or "",
+                    price = sale.price or 0,
+                })
+            end
+            return formatted
+        end)
+        if err then
             auctioneer.priceHistory.fetching = false
-            print(chat.header(addon.name):append(chat.error("Failed to extract Item.sales array")))
             return
         end
 
-        local ok, salesTable = pcall(json.decode, salesJson)
-        if not ok then
-            auctioneer.priceHistory.fetching = false
-            print(chat.header(addon.name):append(chat.error("Failed to decode JSON")))
+        if #sales > 0 then
+            auctioneer.priceHistory.sales = sales
+        end
+
+        local bazaar, err2 = handleJsonField(body, "bazaar", id, function(bazaarTable)
+            local formatted = {}
+            for _, entry in ipairs(bazaarTable) do
+                local serverAndPlayerHtml = entry[1]
+                local price = entry[2]
+                local quantity = entry[3]
+                local zone = entry[4]
+                local timestamp = entry[5]
+
+                local server, player = serverAndPlayerHtml:match("([^.]+)%.<a href='.-/([^/]+)'>")
+                table.insert(formatted, {
+                    server = server or "",
+                    player = player or "",
+                    price = price or 0,
+                    quantity = quantity or 0,
+                    zone = zone or "",
+                    time = timestamp or 0
+                })
+            end
+            return formatted
+        end)
+        if err2 then
             return
         end
 
-        local formattedSales = {}
-        for _, sale in ipairs(salesTable) do
-            table.insert(formattedSales, {
-                date = os.date("%Y-%m-%d %H:%M:%S", sale.saleon),
-                seller = sale.seller_name or "",
-                buyer = sale.buyer_name or "",
-                price = sale.price or 0,
-            })
+        if #bazaar > 0 then
+            auctioneer.priceHistory.bazaar = bazaar
         end
 
-        auctioneer.priceHistory.sales = formattedSales
+        if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.bazaar == nil then
+            auctioneer.priceHistory.fetching = false
+        end
     end)
 end
 

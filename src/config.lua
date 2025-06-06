@@ -3,6 +3,9 @@ local config = {}
 local default = T {
     confirmationPopup = { true },
     duplicatePopup = { true },
+    itemPreview = { true },
+    priceHistory = { true },
+    auctionHouse = { true },
     server = { 1 }
 }
 

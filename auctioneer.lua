@@ -35,13 +35,16 @@ jobs = require("data/jobs")
 servers = require("data/servers")
 items = {}
 
+local categoryLookup = {}
 for _, pair in ipairs(itemIds) do
-    local id = pair[1]
-    local category = pair[2]
-    local item = resourceManager:GetItemById(id)
-    local NO_AUCTION = 64
+    categoryLookup[pair[1]] = pair[2]
+end
 
-    if item and bit.band(item.Flags, NO_AUCTION) == 0 then
+for id = 1, 25601 do
+    local category = categoryLookup[id] or 0
+    local item = resourceManager:GetItemById(id)
+
+    if item and item.Name[1] ~= "." then -- Get rid of all the empty items
         if not items[id] then
             items[id] = {}
         end
@@ -64,7 +67,8 @@ auctioneer = {
     auctionHouseInitialized = false,
     priceHistory = {
         sales = nil,
-        fetching = false
+        bazaar = nil,
+        fetching = false,
     }
 }
 
