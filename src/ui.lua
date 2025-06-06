@@ -360,7 +360,7 @@ function ui.drawPriceHistory()
             end
         end
     else
-        if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.sales == nil then
+        if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.bazaar == nil then
             imgui.Text("Fetching...")
         else
             if auctioneer.priceHistory.sales ~= nil then
