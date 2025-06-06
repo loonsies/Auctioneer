@@ -1,6 +1,6 @@
 local ui = {}
 
-local quantityInput = { "1" }
+local quantityInput = { 1 }
 local priceInput = { "" }
 local stack = { false }
 local gilIcon = nil
@@ -104,7 +104,7 @@ function ui.drawConfirmationModal()
         imgui.Text(string.format("This task will be executed %s times", quantity))
         if imgui.Button("OK", { 120, 0 }) then
             if auctionHouse.proposal(modal.action, name, single, price, quantity) then
-                quantityInput = { "1" }
+                quantityInput = { 1 }
             end
             modal.visible = false
             imgui.CloseCurrentPopup()
@@ -230,7 +230,11 @@ function ui.drawBuySellCommands()
     imgui.Text("Quantity")
     imgui.SameLine()
     imgui.SetNextItemWidth(150)
-    imgui.InputInt("##Quantity", quantityInput)
+    if imgui.InputInt("##Quantity", quantityInput) then
+        if quantityInput[1] < 1 then
+            quantityInput = { 1 }
+        end
+    end
 
     imgui.SameLine()
     imgui.Text("Price")
@@ -261,7 +265,7 @@ function ui.drawBuySellCommands()
             else
                 if auctionHouse.proposal(auctionHouse.actions.buy, items[search.selectedItem].shortName,
                         stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
-                    quantityInput = { "1" }
+                    quantityInput = { 1 }
                 end
             end
         end
@@ -288,7 +292,7 @@ function ui.drawBuySellCommands()
             else
                 if auctionHouse.proposal(auctionHouse.actions.sell, items[search.selectedItem].shortName,
                         stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
-                    quantityInput = { "1" }
+                    quantityInput = { 1 }
                 end
             end
         end
@@ -360,7 +364,7 @@ function ui.drawPriceHistory()
         if auctioneer.priceHistory.sales == nil then
             imgui.Text("Fetching...")
         else
-            if imgui.BeginTable("PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit)) then
+            if imgui.BeginTable("PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit)) then
                 imgui.TableSetupColumn("Date")
                 imgui.TableSetupColumn("Seller")
                 imgui.TableSetupColumn("Buyer")
@@ -402,7 +406,7 @@ function ui.drawAuctionHouseTab()
         imgui.Text("Auction House not initialized.")
         imgui.Text("Interact with it to initialize this tab.")
     else
-        if imgui.BeginTable("AuctionHouse", 5, bit.bor(ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit)) then
+        if imgui.BeginTable("AuctionHouse", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit)) then
             imgui.TableSetupColumn("Status")
             imgui.TableSetupColumn("Item")
             imgui.TableSetupColumn("Expires in")
