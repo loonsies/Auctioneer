@@ -39,8 +39,9 @@ for _, pair in ipairs(itemIds) do
     local id = pair[1]
     local category = pair[2]
     local item = resourceManager:GetItemById(id)
+    local NO_AUCTION = 64
 
-    if item then
+    if item and bit.band(item.Flags, NO_AUCTION) == 0 then
         if not items[id] then
             items[id] = {}
         end
