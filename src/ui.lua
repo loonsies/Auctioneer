@@ -1,6 +1,6 @@
 local ui = {}
 
-local minSize = { 450, 500 }
+local minSize = { 400, 350 }
 local quantityInput = { 1 }
 local priceInput = { "" }
 local stack = { false }
@@ -143,7 +143,7 @@ function ui.drawSearch()
     imgui.InputText("##Search", search.input, 48)
 
     if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
-        imgui.TableSetupColumn("Item", ImGuiTableFlags_ScrollY)
+        imgui.TableSetupColumn("##Item", ImGuiTableFlags_ScrollY)
         for _, result in ipairs(search.results) do
             imgui.TableNextRow()
             imgui.TableSetColumnIndex(0)
@@ -317,7 +317,7 @@ function ui.drawPriceHistory()
     local availX, availY = imgui.GetContentRegionAvail()
 
     imgui.NewLine()
-    imgui.Text("Price History")
+    imgui.Text("FFXIAH")
     imgui.SameLine()
     imgui.Dummy({ 25, 0 })
 
@@ -349,7 +349,7 @@ function ui.drawPriceHistory()
     end
 
     if auctioneer.priceHistory.fetching == false then
-        if imgui.Button("Fetch prices from FFXIAH") then
+        if imgui.Button("Fetch prices & bazaar") then
             if search.selectedItem == nil then
                 print(chat.header(addon.name):append(chat.error("Please select an item")))
             else
@@ -364,7 +364,9 @@ function ui.drawPriceHistory()
             imgui.Text("Fetching...")
         else
             if auctioneer.priceHistory.sales ~= nil then
-                if imgui.BeginTable("##PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV), { 0, 150 }) then
+                imgui.Text("Price history")
+
+                if imgui.BeginTable("##PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
                     imgui.TableSetupColumn("Date")
                     imgui.TableSetupColumn("Seller")
                     imgui.TableSetupColumn("Buyer")
@@ -392,7 +394,7 @@ function ui.drawPriceHistory()
             if auctioneer.priceHistory.bazaar ~= nil then
                 imgui.Text("Bazaar")
 
-                if imgui.BeginTable("##BazaarTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV), { 0, 150 }) then
+                if imgui.BeginTable("##BazaarTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
                     imgui.TableSetupColumn("Player")
                     imgui.TableSetupColumn("Price")
                     imgui.TableSetupColumn("Quantity")
@@ -439,7 +441,7 @@ function ui.drawAuctionHouseTab()
         imgui.Text("Auction House not initialized.")
         imgui.Text("Interact with it to initialize this tab.")
     else
-        if imgui.BeginTable("##AuctionHouseTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV)) then
+        if imgui.BeginTable("##AuctionHouseTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg)) then
             imgui.TableSetupColumn("Status")
             imgui.TableSetupColumn("Item")
             imgui.TableSetupColumn("Expires in")
