@@ -57,3 +57,11 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 ### Auction House Menu Commands
 - **Open AH Menu:** `ah menu`  
 - **Clear Sold/Unsold Status:** `ah clear`
+
+---
+
+## Credits & Thanks
+
+- Ivaar for the original addon
+- [mousseng]([https://github.com/purnasth](https://github.com/mousseng)) for some functions i used, mainly for item preview
+- [ThornyFFXI]([https://github.com/ThornyFFXI]) for all their unvaluable help!
