@@ -131,4 +131,23 @@ function utils.rgbaToU32(r, g, b, a)
         + to255(r)
 end
 
+function utils.relativeTime(epoch)
+    local diff = os.time() - epoch
+
+    if diff < 60 then
+        return "just now"
+    elseif diff < 3600 then
+        local minutes = math.floor(diff / 60)
+        return minutes == 1 and "a minute ago" or (minutes .. " minutes ago")
+    elseif diff < 86400 then
+        local hours = math.floor(diff / 3600)
+        return hours == 1 and "about an hour ago" or (hours .. " hours ago")
+    elseif diff < 172800 then
+        return "yesterday"
+    else
+        local days = math.floor(diff / 86400)
+        return days == 1 and "1 day ago" or (days .. " days ago")
+    end
+end
+
 return utils
