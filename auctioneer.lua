@@ -40,7 +40,7 @@ for _, pair in ipairs(itemIds) do
     categoryLookup[pair[1]] = pair[2]
 end
 
-for id = 1, 65534 do
+for id = 1, 65534 do -- 65535 is gil
     local category = categoryLookup[id] or 0
     local item = resourceManager:GetItemById(id)
     if item then
