@@ -1,8 +1,8 @@
 addon.name = "Auctioneer"
 addon.version = "2.0"
-addon.author = "Original addon by Ivaar, ported and modified by melones"
+addon.author = "Original addon by Ivaar, ported and modified by looney"
 addon.desc = 'Interact with auction house using commands.';
-addon.link = 'https://github.com/senolem/auctioneer';
+addon.link = 'https://github.com/loonsies/auctioneer';
 
 -- Ashita dependencies
 require "common"
@@ -40,23 +40,27 @@ for _, pair in ipairs(itemIds) do
     categoryLookup[pair[1]] = pair[2]
 end
 
-for id = 1, 25601 do
+for id = 1, 65534 do
     local category = categoryLookup[id] or 0
     local item = resourceManager:GetItemById(id)
+    if item then
+        local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
+        local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)
 
-    if item and item.Name[1] ~= "." then -- Get rid of all the empty items
-        if not items[id] then
-            items[id] = {}
+        if (isBazaarable or isAuctionable) and item.Name[1] ~= "." then -- Get rid of all the empty items
+            if not items[id] then
+                items[id] = {}
+            end
+
+            items[id].shortName = item.Name[1] or ""
+            items[id].longName = item.LogNameSingular[1] or ""
+            items[id].description = item.Description[1] or ""
+            items[id].category = category
+            items[id].level = item.Level
+            items[id].jobs = item.Jobs
+            items[id].bitmap = item.Bitmap
+            items[id].imageSize = item.ImageSize
         end
-
-        items[id].shortName = item.Name[1] or ""
-        items[id].longName = item.LogNameSingular[1] or ""
-        items[id].description = item.Description[1] or ""
-        items[id].category = category
-        items[id].level = item.Level
-        items[id].jobs = item.Jobs
-        items[id].bitmap = item.Bitmap
-        items[id].imageSize = item.ImageSize
     end
 end
 
