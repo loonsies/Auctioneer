@@ -137,28 +137,37 @@ function ui.drawFilters()
 end
 
 function ui.drawSearch()
-    count = search.status == search.statuses.found and #search.results or 0
-    imgui.Text("Search (" .. count .. ")")
+    imgui.Text("Search (" .. #search.results .. ")")
     imgui.SetNextItemWidth(-1)
     imgui.InputText("##Search", search.input, 48)
 
     if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
         imgui.TableSetupColumn("##Item", ImGuiTableFlags_ScrollY)
-        for _, result in ipairs(search.results) do
-            imgui.TableNextRow()
-            imgui.TableSetColumnIndex(0)
 
-            if search.status == search.statuses.found then
-                local itemLabel = items[result].shortName
-                if imgui.Selectable(itemLabel) then
-                    search.selectedItem = result
+        local clipper = ImGuiListClipper.new()
+        clipper:Begin(#search.results, -1);
+
+        while clipper:Step() do
+            for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
+                imgui.TableNextRow()
+                imgui.TableSetColumnIndex(0)
+
+                if search.status == search.statuses.found then
+                    local item = search.results[i + 1]
+                    local itemLabel = items[item].shortName
+                    local isSelected = (search.selectedItem == item)
+                    if imgui.Selectable(itemLabel, isSelected) then
+                        search.selectedItem = item
+                    end
+                elseif search.status == search.statuses.noResults then
+                    imgui.Text(search.statusesMessage.noResults)
+                elseif search.status == search.statuses.tooShort then
+                    imgui.Text(search.statusesMessage.tooShort)
                 end
-            elseif search.status == search.statuses.noResults then
-                imgui.Text(search.statusesMessage.noResults)
-            elseif search.status == search.statuses.tooShort then
-                imgui.Text(search.statusesMessage.tooShort)
             end
         end
+
+        clipper:End()
         imgui.EndTable()
     end
 end
@@ -247,6 +256,8 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error("Please enter a price")))
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
+        elseif auctioneer.AuctionHouse == nil then
+            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -274,6 +285,8 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error("Please enter a price")))
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
+        elseif auctioneer.AuctionHouse == nil then
+            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -297,7 +310,7 @@ function ui.drawBuySellCommands()
     imgui.SameLine()
 
     local spacing = 5
-    local gilText = utils.commaValue(memoryManager:GetInventory():GetContainerItem(0, 0).Count)
+    local gilText = utils.commaValue(utils.getCurrentGils())
     local textWidth = imgui.CalcTextSize(gilText)
     local totalWidth = iconSize + spacing + textWidth
     local availX, availY = imgui.GetContentRegionAvail()
