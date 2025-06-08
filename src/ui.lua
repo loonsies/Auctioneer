@@ -243,7 +243,11 @@ function ui.drawBuySellCommands()
     imgui.SetNextItemWidth(-1)
     imgui.InputText("##Price", priceInput, 48)
 
-    imgui.Checkbox("Stack", stack)
+    if imgui.Checkbox("Stack", stack) then
+        auctioneer.priceHistory.sales = nil
+        auctioneer.priceHistory.bazaar = nil
+        auctioneer.priceHistory.fetching = false
+    end
     imgui.SameLine()
 
     if imgui.Button("Buy") then
@@ -364,7 +368,7 @@ function ui.drawPriceHistory()
                 auctioneer.priceHistory.sales = nil
                 auctioneer.priceHistory.bazaar = nil
                 auctioneer.priceHistory.fetching = true
-                ffxiah.fetchSales(search.selectedItem)
+                ffxiah.fetch(search.selectedItem, stack[1])
             end
         end
     else
