@@ -12,11 +12,10 @@ search.input = { "" }
 search.previousInput = { "" }
 search.category = 999
 search.previousCategory = 999
-search.statuses = { noResults = 0, tooShort = 1, found = 3 }
+search.statuses = { noResults = 0, found = 1 }
 search.statusesMessage =
 {
-    noResults = "No results found.",
-    tooShort = "A minimum of 2 characters are required for searching."
+    noResults = "No results found."
 }
 search.status = search.statuses.noResults
 search.selectedItem = nil
@@ -60,21 +59,17 @@ function ui.updateSearch()
     search.results = {}
     input = table.concat(search.input)
 
-    if #input < 2 and #input ~= 0 then
-        search.status = search.statuses.tooShort
-    else
-        for id, item in pairs(items) do
-            if search.category == 999 or search.category == item.category then
-                if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
-                    table.insert(search.results, id)
-                end
+    for id, item in pairs(items) do
+        if search.category == 999 or search.category == item.category then
+            if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
+                table.insert(search.results, id)
             end
         end
-        if #search.results == 0 then
-            search.status = search.statuses.noResults
-        else
-            search.status = search.statuses.found
-        end
+    end
+    if #search.results == 0 then
+        search.status = search.statuses.noResults
+    else
+        search.status = search.statuses.found
     end
 end
 
@@ -102,7 +97,7 @@ function ui.drawConfirmationModal()
         imgui.Text("Are you sure you want to proceed with this transaction?")
         imgui.Separator()
         imgui.Text(string.format("%s %s of %s for %s", auctionHouse.actions[modal.action],
-            single == "1" and "Single" or "Stack", name, price))
+            single == "0" and "Single" or "Stack", name, price))
         imgui.Text(string.format("This task will be executed %s times", quantity))
         if imgui.Button("OK", { 120, 0 }) then
             if auctionHouse.proposal(modal.action, name, single, price, quantity) then
@@ -137,27 +132,36 @@ function ui.drawFilters()
 end
 
 function ui.drawSearch()
-    count = search.status == search.statuses.found and #search.results or 0
-    imgui.Text("Search (" .. count .. ")")
+    imgui.Text("Search (" .. #search.results .. ")")
     imgui.SetNextItemWidth(-1)
     imgui.InputText("##Search", search.input, 48)
 
     if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
         imgui.TableSetupColumn("##Item", ImGuiTableFlags_ScrollY)
-        for _, result in ipairs(search.results) do
+
+        if search.status == search.statuses.found then
+            local clipper = ImGuiListClipper.new()
+            clipper:Begin(#search.results, -1);
+
+            while clipper:Step() do
+                for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
+                    imgui.TableNextRow()
+                    imgui.TableSetColumnIndex(0)
+
+                    local item = search.results[i + 1]
+                    local itemLabel = items[item].shortName
+                    local isSelected = (search.selectedItem == item)
+                    if imgui.Selectable(itemLabel, isSelected) then
+                        search.selectedItem = item
+                    end
+                end
+            end
+
+            clipper:End()
+        elseif search.status == search.statuses.noResults then
             imgui.TableNextRow()
             imgui.TableSetColumnIndex(0)
-
-            if search.status == search.statuses.found then
-                local itemLabel = items[result].shortName
-                if imgui.Selectable(itemLabel) then
-                    search.selectedItem = result
-                end
-            elseif search.status == search.statuses.noResults then
-                imgui.Text(search.statusesMessage.noResults)
-            elseif search.status == search.statuses.tooShort then
-                imgui.Text(search.statusesMessage.tooShort)
-            end
+            imgui.Text(search.statusesMessage.noResults)
         end
         imgui.EndTable()
     end
@@ -247,6 +251,8 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error("Please enter a price")))
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
+        elseif auctioneer.AuctionHouse == nil then
+            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -274,6 +280,8 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error("Please enter a price")))
         elseif search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error("Please select an item")))
+        elseif auctioneer.AuctionHouse == nil then
+            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -297,7 +305,7 @@ function ui.drawBuySellCommands()
     imgui.SameLine()
 
     local spacing = 5
-    local gilText = utils.commaValue(memoryManager:GetInventory():GetContainerItem(0, 0).Count)
+    local gilText = utils.commaValue(utils.getCurrentGils())
     local textWidth = imgui.CalcTextSize(gilText)
     local totalWidth = iconSize + spacing + textWidth
     local availX, availY = imgui.GetContentRegionAvail()

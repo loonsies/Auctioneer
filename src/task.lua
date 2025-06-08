@@ -26,7 +26,7 @@ local function handleEntry(entry)
             throttle_timer = os.clock() + throttle_interval
         end
     elseif entry.type == task.type.confirmSell then
-        if auctionHouse.sendConfirmSell(entry.packet) then
+        if auctionHouse.sendConfirmSell(entry.packet, entry.id, entry.name, entry.single) then
             throttle_timer = os.clock() + throttle_interval
         end
     elseif entry.type == task.type.clearSlot then
@@ -41,14 +41,21 @@ end
 local function handleQueue()
     while #queue > 0 and os.clock() > throttle_timer do
         handleEntry(queue[1])
-        for i = 1, #queue do
-            queue[i] = queue[i + 1]
-        end
+        table.remove(queue, 1)
     end
 end
 
 function task.clear()
     queue = {}
+end
+
+function task.preempt(entry)
+    throttle_timer = os.clock() + throttle_interval
+    table.insert(queue, 1, entry)
+    print(chat.header(addon.name):append(chat.warning(
+        string.format('%s task prioritized, will run after %.2f seconds.',
+            task.type[entry.type], throttle_interval)
+    )))
 end
 
 function task.enqueue(entry)

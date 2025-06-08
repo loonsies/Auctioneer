@@ -38,14 +38,12 @@ function auctionHouse.buy(item, single, price)
 
     local slot = auctionHouse.findEmptySlot() == nil and 0x07 or auctionHouse.findEmptySlot()
     local trans = struct.pack("bbxxihxx", 0x0E, slot, price, item.Id)
-    local command = string.format('/buy "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price),
+    local log = string.format('Sending buy packet: "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price),
         single == 1 and "[Single]" or "[Stack]", item.Id)
-
-
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
-    packet = trans:totable()
+    local packet = trans:totable()
 
-    print(chat.header(addon.name):append(chat.color2(200, command)))
+    print(chat.header(addon.name):append(chat.color2(200, log)))
     packetManager:AddOutgoingPacket(0x4E, packet)
     return true
 end
@@ -69,20 +67,23 @@ function auctionHouse.sell(item, single, price)
     end
 
     local trans = struct.pack("bxxxihh", 0x04, price, index, item.Id)
-    local command = string.format('/sell "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price),
+    local log = string.format('Sending sell packet: "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price),
         single == 1 and "[Single]" or "[Stack]", item.Id, index)
-
     trans = struct.pack("bbxx", 0x4E, 0x1E) .. trans .. struct.pack("bi32i11", single, 0x00, 0x00)
     last4E = trans
     local packet = trans:totable()
 
-    print(chat.header(addon.name):append(chat.color2(200, command)))
+    print(chat.header(addon.name):append(chat.color2(200, log)))
     packetManager:AddOutgoingPacket(0x4E, packet)
     return true
 end
 
-function auctionHouse.sendConfirmSell(packet)
+function auctionHouse.sendConfirmSell(packet, id, name, single)
     if packet ~= nil then
+        local log = string.format('Sending confirm sell packet: "%s" %s ID:%s', name,
+            single == 1 and "[Single]" or "[Stack]", id)
+
+        print(chat.header(addon.name):append(chat.color2(200, log)))
         packetManager:AddOutgoingPacket(0x4E, packet)
         return true
     end
@@ -129,9 +130,10 @@ function auctionHouse.clearSlot(slot)
         print(chat.header(addon.name):append(chat.error("Invalid slot number")))
     end
 
-    print(chat.header(addon.name):append(chat.color2(200,
-        string.format('Slot %i (%s): clearing...', slot + 1, auctioneer.AuctionHouse[slot].status))))
+    local log = string.format('Slot %i (%s): sending clear packet', slot + 1, auctioneer.AuctionHouse[slot].status)
     local packet = struct.pack("bbxxbbi32i22", 0x4E, 0x1E, 0x10, slot, 0x00, 0x00):totable()
+
+    print(chat.header(addon.name):append(chat.color2(200, log)))
     packetManager:AddOutgoingPacket(0x4E, packet)
 end
 
