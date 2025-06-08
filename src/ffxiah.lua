@@ -70,8 +70,9 @@ local function handleJsonField(body, fieldName, id, processFn)
     return processFn(tbl), false
 end
 
-function ffxiah.fetchSales(id)
-    local url = "https://www.ffxiah.com/item/" .. tostring(id)
+function ffxiah.fetch(id, stack)
+    local stackParam = stack and "1" or "0"
+    local url = "https://www.ffxiah.com/item/" .. tostring(id) .. "?stack=" .. stackParam
 
     local body, statusCode, headers = fetchUrl(url)
     if not body then
