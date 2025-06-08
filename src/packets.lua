@@ -3,7 +3,12 @@ local packets = {}
 function packets.handleIncomingPacket(e)
     if e.id == 0x04C then
         local pType = e.data:byte(5)
-        if pType == 0x04 then
+        if pType == 0x04 then -- Sell confirm packet
+            -- lastItemId = struct.unpack("H", e.data:sub(15, 16))
+            -- lastIndex = struct.unpack("H", e.data:sub(13, 14))
+            -- lastSingle = e.data:byte(17)
+            -- lastFee = struct.unpack("i", e.data, 9)
+
             local slot = auctionHouse.findEmptySlot()
             local fee = struct.unpack("i", e.data, 9)
             if last4E ~= nil and e.data:byte(7) == 0x01 and slot ~= nil and last4E ~= nil and last4E:byte(5) == 0x04 and
@@ -14,12 +19,15 @@ function packets.handleIncomingPacket(e)
                     last4E:byte(17), 0x00, 0x00):totable()
                 last4E = nil
 
-                --entry = {
-                --    type = task.type.confirmSell,
-                --    packet = packet
-                --}
-                --task.enqueue(entry)
-                auctionHouse.sendConfirmSell(packet)
+                local id = struct.unpack("H", e.data:sub(15, 16))
+                entry = {
+                    type = task.type.confirmSell,
+                    packet = packet,
+                    id = id,
+                    name = items[id].shortName,
+                    single = e.data:byte(17)
+                }
+                task.preempt(entry)
             end
         elseif pType == 0x0A then
             if e.data:byte(7) == 0x01 then
