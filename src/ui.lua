@@ -12,11 +12,10 @@ search.input = { "" }
 search.previousInput = { "" }
 search.category = 999
 search.previousCategory = 999
-search.statuses = { noResults = 0, tooShort = 1, found = 3 }
+search.statuses = { noResults = 0, found = 1 }
 search.statusesMessage =
 {
-    noResults = "No results found.",
-    tooShort = "A minimum of 2 characters are required for searching."
+    noResults = "No results found."
 }
 search.status = search.statuses.noResults
 search.selectedItem = nil
@@ -60,21 +59,17 @@ function ui.updateSearch()
     search.results = {}
     input = table.concat(search.input)
 
-    if #input < 2 and #input ~= 0 then
-        search.status = search.statuses.tooShort
-    else
-        for id, item in pairs(items) do
-            if search.category == 999 or search.category == item.category then
-                if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
-                    table.insert(search.results, id)
-                end
+    for id, item in pairs(items) do
+        if search.category == 999 or search.category == item.category then
+            if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
+                table.insert(search.results, id)
             end
         end
-        if #search.results == 0 then
-            search.status = search.statuses.noResults
-        else
-            search.status = search.statuses.found
-        end
+    end
+    if #search.results == 0 then
+        search.status = search.statuses.noResults
+    else
+        search.status = search.statuses.found
     end
 end
 
@@ -144,30 +139,30 @@ function ui.drawSearch()
     if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
         imgui.TableSetupColumn("##Item", ImGuiTableFlags_ScrollY)
 
-        local clipper = ImGuiListClipper.new()
-        clipper:Begin(#search.results, -1);
+        if search.status == search.statuses.found then
+            local clipper = ImGuiListClipper.new()
+            clipper:Begin(#search.results, -1);
 
-        while clipper:Step() do
-            for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
-                imgui.TableNextRow()
-                imgui.TableSetColumnIndex(0)
+            while clipper:Step() do
+                for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
+                    imgui.TableNextRow()
+                    imgui.TableSetColumnIndex(0)
 
-                if search.status == search.statuses.found then
                     local item = search.results[i + 1]
                     local itemLabel = items[item].shortName
                     local isSelected = (search.selectedItem == item)
                     if imgui.Selectable(itemLabel, isSelected) then
                         search.selectedItem = item
                     end
-                elseif search.status == search.statuses.noResults then
-                    imgui.Text(search.statusesMessage.noResults)
-                elseif search.status == search.statuses.tooShort then
-                    imgui.Text(search.statusesMessage.tooShort)
                 end
             end
-        end
 
-        clipper:End()
+            clipper:End()
+        elseif search.status == search.statuses.noResults then
+            imgui.TableNextRow()
+            imgui.TableSetColumnIndex(0)
+            imgui.Text(search.statusesMessage.noResults)
+        end
         imgui.EndTable()
     end
 end
