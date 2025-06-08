@@ -5,6 +5,14 @@ function utils.commaValue(n)
     return left .. (num:reverse():gsub("(%d%d%d)", "%1,"):reverse()) .. right
 end
 
+function utils.getCurrentGils()
+    if memoryManager and memoryManager:GetInventory() and memoryManager:GetInventory():GetContainerItem(0, 0) then
+        return memoryManager:GetInventory():GetContainerItem(0, 0).Count
+    else
+        return 0
+    end
+end
+
 function utils.hasFlag(n, flag)
     return bit.band(n, flag) == flag
 end
