@@ -20,7 +20,8 @@
     "MouseEvent",
     "FontBorderFlags",
     "FontCreateFlags",
-    "FontDrawFlags"
+    "FontDrawFlags",
+    "ImGuiListClipper"
   ],
   "Lua.runtime.version": "LuaJIT",
   "Lua.workspace.library": ["G:\\Ashita\\addons\\libs"]
