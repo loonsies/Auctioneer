@@ -50,11 +50,12 @@ function task.clear()
 end
 
 function task.preempt(entry)
+    local action = "prioritized" and #queue > 0 or "throttled"
     throttle_timer = os.clock() + throttle_interval
     table.insert(queue, 1, entry)
     print(chat.header(addon.name):append(chat.warning(
-        string.format('%s task prioritized, will run after %.2f seconds.',
-            task.type[entry.type], throttle_interval)
+        string.format('%s task %s, will run after %.2f seconds.',
+            task.type[entry.type], action, throttle_interval)
     )))
 end
 
