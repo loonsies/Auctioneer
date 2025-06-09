@@ -47,6 +47,10 @@ function ui.update()
 
     if search.selectedItem ~= search.previousSelectedItem then
         auctioneer.priceHistory.sales = nil
+        auctioneer.priceHistory.stock = nil
+        auctioneer.priceHistory.rate = nil
+        auctioneer.priceHistory.salesPerDay = nil
+        auctioneer.priceHistory.median = nil
         auctioneer.priceHistory.bazaar = nil
         auctioneer.priceHistory.fetching = false
         search.previousSelectedItem = search.selectedItem
@@ -245,6 +249,10 @@ function ui.drawBuySellCommands()
 
     if imgui.Checkbox("Stack", stack) then
         auctioneer.priceHistory.sales = nil
+        auctioneer.priceHistory.stock = nil
+        auctioneer.priceHistory.rate = nil
+        auctioneer.priceHistory.salesPerDay = nil
+        auctioneer.priceHistory.median = nil
         auctioneer.priceHistory.bazaar = nil
         auctioneer.priceHistory.fetching = false
     end
@@ -351,6 +359,10 @@ function ui.drawPriceHistory()
             local isSelected = auctioneer.config.server[1] == server.id
             if imgui.Selectable(server.name, isSelected) and auctioneer.config.server[1] ~= server.id then
                 auctioneer.priceHistory.sales = nil
+                auctioneer.priceHistory.stock = nil
+                auctioneer.priceHistory.rate = nil
+                auctioneer.priceHistory.salesPerDay = nil
+                auctioneer.priceHistory.median = nil
                 auctioneer.priceHistory.bazaar = nil
                 auctioneer.priceHistory.fetching = false
                 auctioneer.config.server[1] = server.id
@@ -366,6 +378,10 @@ function ui.drawPriceHistory()
                 print(chat.header(addon.name):append(chat.error("Please select an item")))
             else
                 auctioneer.priceHistory.sales = nil
+                auctioneer.priceHistory.stock = nil
+                auctioneer.priceHistory.rate = nil
+                auctioneer.priceHistory.salesPerDay = nil
+                auctioneer.priceHistory.median = nil
                 auctioneer.priceHistory.bazaar = nil
                 auctioneer.priceHistory.fetching = true
                 ffxiah.fetch(search.selectedItem, stack[1])
@@ -377,6 +393,16 @@ function ui.drawPriceHistory()
         else
             if auctioneer.priceHistory.sales ~= nil then
                 imgui.Text("Price history")
+
+                imgui.Text("Stock: ")
+                imgui.SameLine(0, 0)
+                imgui.TextColored(utils.hexToImVec4(utils.getStockColor(auctioneer.priceHistory.stock)), auctioneer.priceHistory.stock)
+                imgui.Text(string.format("Rate: "))
+                imgui.SameLine(0, 0)
+                imgui.TextColored(utils.hexToImVec4(utils.getSalesRatingColor(auctioneer.priceHistory.rate)), utils.getSalesRatingLabel(auctioneer.priceHistory.rate))
+                imgui.SameLine(0, 0)
+                imgui.Text(string.format(" (%s sold /day)", auctioneer.priceHistory.salesPerDay))
+                imgui.Text(string.format("Median: %s", utils.commaValue(auctioneer.priceHistory.median)))
 
                 if imgui.BeginTable("##PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
                     imgui.TableSetupColumn("Date")
@@ -395,7 +421,7 @@ function ui.drawPriceHistory()
                         imgui.Text(sale.buyer)
                         imgui.TableSetColumnIndex(3)
                         local priceStr = tostring(sale.price)
-                        if imgui.Selectable(priceStr .. "##" .. i) then
+                        if imgui.Selectable(utils.commaValue(sale.price) .. "##" .. i) then
                             priceInput[1] = priceStr
                         end
                     end

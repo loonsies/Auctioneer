@@ -158,4 +158,52 @@ function utils.relativeTime(epoch)
     end
 end
 
+function utils.getSalesRatingLabel(rate)
+    local r = tonumber(rate)
+    if not r then return nil end
+
+    for _, t in ipairs(salesRating.thresholds) do
+        if r >= t[1] then
+            return salesRating.labels[t[2]]
+        end
+    end
+end
+
+function utils.getSalesRatingColor(rate)
+    local r = tonumber(rate)
+    if not r then return nil end
+
+    for _, t in ipairs(salesRating.thresholds) do
+        if r >= t[1] then
+            return salesRating.colors[t[2]]
+        end
+    end
+end
+
+function utils.getStockColor(stock)
+    local s = tonumber(stock)
+    if s > 0 then
+        return salesRating.colors[#salesRating.colors]
+    else
+        return salesRating.colors[2]
+    end
+end
+
+function utils.calcSalesRate(now, oldestSaleTimestamp, numSales)
+    if numSales == 0 or now <= oldestSaleTimestamp then
+        return 0
+    end
+    local timeDiff = now - oldestSaleTimestamp
+    local salesPerDay = numSales * 86400 / timeDiff
+    return string.format("%.3f", salesPerDay)
+end
+
+function utils.hexToImVec4(hex)
+    hex = hex:gsub("#", "")
+    local r = tonumber("0x" .. hex:sub(1,2)) / 255
+    local g = tonumber("0x" .. hex:sub(3,4)) / 255
+    local b = tonumber("0x" .. hex:sub(5,6)) / 255
+    return { r, g, b, 1.0 }
+end
+
 return utils
