@@ -84,6 +84,7 @@ function ffxiah.fetch(id, stack)
         local formatted = {}
         for _, sale in ipairs(salesTable) do
             table.insert(formatted, {
+                saleon = sale.saleon or "",
                 date = os.date("%Y-%m-%d %H:%M:%S", sale.saleon),
                 seller = sale.seller_name or "",
                 buyer = sale.buyer_name or "",
@@ -92,13 +93,23 @@ function ffxiah.fetch(id, stack)
         end
         return formatted
     end)
+
     if err then
         auctioneer.priceHistory.fetching = false
         return
     end
 
-    if #sales > 0 then
+    local stock = body:match('<td>%s*Stock%s*</td>%s*<td><span[^>]->(%d+)</span>')
+    local rate = body:match('Rate</td>%s*<td><span[^>]->([^<]+)</span>')
+    local median = body:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
+    local salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
+
+    if sales ~= nil and #sales > 0 then
         auctioneer.priceHistory.sales = sales
+        auctioneer.priceHistory.stock = stock
+        auctioneer.priceHistory.rate = rate
+        auctioneer.priceHistory.salesPerDay = salesPerDay
+        auctioneer.priceHistory.median = median
     end
 
     local bazaar, err2 = handleJsonField(body, "bazaar", id, function(bazaarTable)

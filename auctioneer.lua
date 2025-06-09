@@ -33,6 +33,7 @@ itemFlags = require("data/itemFlags")
 categories = require("data/categories")
 jobs = require("data/jobs")
 servers = require("data/servers")
+salesRating = require("data/salesRating")
 items = {}
 
 local categoryLookup = {}
@@ -71,6 +72,10 @@ auctioneer = {
     auctionHouseInitialized = false,
     priceHistory = {
         sales = nil,
+        stock = nil,
+        rate = nil,
+        salesPerDay = nil,
+        median = nil,
         bazaar = nil,
         fetching = false,
     }
