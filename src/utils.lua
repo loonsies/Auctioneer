@@ -63,7 +63,7 @@ function utils.escapeString(str)
     return ''
 end
 
-function utils.getJobs(bitfield)
+function utils.getJobsString(bitfield)
     if bitfield == 8388606 then
         return T { 'All jobs' }
     end
@@ -72,6 +72,20 @@ function utils.getJobs(bitfield)
     for i = 1, 23 do
         if bit.band(1, bit.rshift(bitfield, i)) == 1 then
             table.insert(jobList, jobs[i])
+        end
+    end
+    return jobList
+end
+
+function utils.getJobs(bitfield)
+    if bitfield == 8388606 then
+        return T { 999 }
+    end
+
+    local jobList = T {}
+    for i = 1, 23 do
+        if bit.band(1, bit.rshift(bitfield, i)) == 1 then
+            table.insert(jobList, i)
         end
     end
     return jobList
@@ -200,10 +214,27 @@ end
 
 function utils.hexToImVec4(hex)
     hex = hex:gsub("#", "")
-    local r = tonumber("0x" .. hex:sub(1,2)) / 255
-    local g = tonumber("0x" .. hex:sub(3,4)) / 255
-    local b = tonumber("0x" .. hex:sub(5,6)) / 255
+    local r = tonumber("0x" .. hex:sub(1, 2)) / 255
+    local g = tonumber("0x" .. hex:sub(3, 4)) / 255
+    local b = tonumber("0x" .. hex:sub(5, 6)) / 255
     return { r, g, b, 1.0 }
+end
+
+function utils.findCommonElements(table1, table2)
+    local commonTable = {}
+    local tempSet = {}
+
+    for _, value in ipairs(table2) do
+        tempSet[value] = true
+    end
+
+    for _, value in ipairs(table1) do
+        if tempSet[value] then
+            commonTable[#commonTable + 1] = value
+        end
+    end
+
+    return commonTable
 end
 
 return utils

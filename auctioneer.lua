@@ -27,6 +27,10 @@ auctionHouse = require("src/auctionHouse")
 utils = require("src/utils")
 task = require("src/task")
 ffxiah = require("src/ffxiah")
+search = require("src/search")
+itemUtils = require("src/itemUtils")
+
+-- Data
 zones = require("data/zones")
 itemIds = require("data/itemIds")
 itemFlags = require("data/itemFlags")
@@ -34,36 +38,11 @@ categories = require("data/categories")
 jobs = require("data/jobs")
 servers = require("data/servers")
 salesRating = require("data/salesRating")
-items = {}
+searchStatus = require("data/searchStatus")
+taskTypes = require("data/taskTypes")
+auctionHouseActions = require("data/auctionHouseActions")
 
-local categoryLookup = {}
-for _, pair in ipairs(itemIds) do
-    categoryLookup[pair[1]] = pair[2]
-end
-
-for id = 1, 65534 do -- 65535 is gil
-    local category = categoryLookup[id] or 0
-    local item = resourceManager:GetItemById(id)
-    if item then
-        local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
-        local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)
-
-        if (isBazaarable or isAuctionable) and item.Name[1] ~= "." then -- Get rid of all the empty items
-            if not items[id] then
-                items[id] = {}
-            end
-
-            items[id].shortName = item.Name[1] or ""
-            items[id].longName = item.LogNameSingular[1] or ""
-            items[id].description = item.Description[1] or ""
-            items[id].category = category
-            items[id].level = item.Level
-            items[id].jobs = item.Jobs
-            items[id].bitmap = item.Bitmap
-            items[id].imageSize = item.ImageSize
-        end
-    end
-end
+items = itemUtils.load()
 
 auctioneer = {
     config = config.load(),
@@ -78,6 +57,22 @@ auctioneer = {
         median = nil,
         bazaar = nil,
         fetching = false,
+    },
+    search = {
+        input = { "" },
+        previousInput = { "" },
+        category = 999,
+        previousCategory = 999,
+        lvMinInput = { 0 },
+        previousLvMinInput = { 0 },
+        lvMaxInput = { 99 },
+        previousLvMaxInput = { 99 },
+        jobSelected = {},
+        previousJobSelected = {},
+        status = searchStatus.noResults,
+        selectedItem = nil,
+        previousSelectedItem = nil,
+        startup = true
     }
 }
 
