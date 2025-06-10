@@ -7,6 +7,7 @@ local default = T {
     priceHistory = { true },
     auctionHouse = { true },
     removeFailedBuyTasks = { true },
+    searchFilters = { true },
     server = { 1 }
 }
 

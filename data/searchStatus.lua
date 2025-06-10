@@ -1,8 +1,8 @@
 searchStatus = {
     noResults = 0,
     found = 1,
-    [1] = "No results found.",
-    [2] = ""
+    [0] = "No results found",
+    [1] = "Found"
 }
 
 return searchStatus

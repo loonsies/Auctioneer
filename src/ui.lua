@@ -1,6 +1,6 @@
 local ui = {}
 
-local minSize = { 400, 350 }
+local minSize = { 400, 400 }
 local quantityInput = { 1 }
 local priceInput = { "" }
 local stack = { false }
@@ -21,12 +21,21 @@ function ui.update()
 
     local currentInput = table.concat(auctioneer.search.input)
     local previousInput = table.concat(auctioneer.search.previousInput)
+    local lvMinInput = table.concat(auctioneer.search.lvMinInput)
+    local previousLvMinInput = table.concat(auctioneer.search.previousLvMinInput)
+    local lvMaxInput = table.concat(auctioneer.search.lvMaxInput)
+    local previousLvMaxInput = table.concat(auctioneer.search.previousLvMaxInput)
+    local selectedJobs = table.concat(auctioneer.search.jobSelected)
+    local previousSelectedJobs = table.concat(auctioneer.search.previousJobSelected)
 
-    if currentInput ~= previousInput or auctioneer.search.category ~= auctioneer.search.previousCategory or auctioneer.search.startup then
+    if currentInput ~= previousInput or auctioneer.search.category ~= auctioneer.search.previousCategory or lvMinInput ~= previousLvMinInput or lvMaxInput ~= previousLvMaxInput or selectedJobs ~= previousSelectedJobs or auctioneer.search.startup then
         search.update()
         auctioneer.search.previousInput = { currentInput }
         auctioneer.search.previousCategory = auctioneer.search.category
         auctioneer.search.startup = false
+        auctioneer.search.previousLvMinInput = { lvMinInput }
+        auctioneer.search.previousLvMaxInput = { lvMaxInput }
+        auctioneer.search.previousJobSelected = { selectedJobs }
     end
 
     if auctioneer.search.selectedItem ~= auctioneer.search.previousSelectedItem then
@@ -82,8 +91,9 @@ end
 
 function ui.drawFilters()
     imgui.Text("Category")
+    imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    if imgui.BeginCombo("##Category", categories.list[auctioneer.search.category]) then
+    if imgui.BeginCombo("##CategoryCombo", categories.list[auctioneer.search.category]) then
         for _, id in ipairs(categories.order) do
             local category = categories.list[id]
             local is_selected = (auctioneer.search.category == id)
@@ -93,15 +103,78 @@ function ui.drawFilters()
         end
         imgui.EndCombo()
     end
+
+    imgui.Text("Lv. Min")
+    imgui.SameLine()
+    imgui.SetNextItemWidth(100)
+    if imgui.InputInt("##LvMin", auctioneer.search.lvMinInput) then
+        if auctioneer.search.lvMinInput[1] < 0 then
+            auctioneer.search.lvMinInput[1] = 0
+        elseif auctioneer.search.lvMinInput[1] > 99 then
+            auctioneer.search.lvMinInput[1] = 99
+        elseif auctioneer.search.lvMinInput[1] > auctioneer.search.lvMaxInput[1] then
+            auctioneer.search.lvMinInput[1] = auctioneer.search.previousLvMinInput[1]
+        end
+    end
+    imgui.SameLine()
+
+    imgui.Text("Lv. Max")
+    imgui.SameLine()
+    imgui.SetNextItemWidth(100)
+    if imgui.InputInt("##LvMax", auctioneer.search.lvMaxInput) then
+        if auctioneer.search.lvMaxInput[1] < 0 then
+            auctioneer.search.lvMaxInput[1] = 0
+        elseif auctioneer.search.lvMaxInput[1] > 99 then
+            auctioneer.search.lvMaxInput[1] = 99
+        elseif auctioneer.search.lvMaxInput[1] < auctioneer.search.lvMinInput[1] then
+            auctioneer.search.lvMaxInput[1] = auctioneer.search.previousLvMaxInput[1]
+        end
+    end
+
+    imgui.Text("Jobs")
+    imgui.SetNextItemWidth(-1)
+    imgui.SameLine()
+    local jobComboText = ""
+    if #auctioneer.search.jobSelected == 0 then
+        jobComboText = "No jobs selected"
+    else
+        jobComboText = string.format("%i jobs selected", #auctioneer.search.jobSelected)
+    end
+    if imgui.BeginCombo("##JobSelectCombo", jobComboText) then
+        for id, jobName in ipairs(jobs) do
+            local isSelected = false
+            for _, selectedId in ipairs(auctioneer.search.jobSelected) do
+                if selectedId == id then
+                    isSelected = true
+                    break
+                end
+            end
+
+            local selected = { isSelected }
+            if imgui.Checkbox(jobName, selected) then
+                if selected[1] then
+                    table.insert(auctioneer.search.jobSelected, id)
+                else
+                    for i, selectedId in ipairs(auctioneer.search.jobSelected) do
+                        if selectedId == id then
+                            table.remove(auctioneer.search.jobSelected, i)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        imgui.EndCombo()
+    end
 end
 
 function ui.drawSearch()
     imgui.Text("Search (" .. #auctioneer.search.results .. ")")
     imgui.SetNextItemWidth(-1)
-    imgui.InputText("##Search", auctioneer.search.input, 48)
+    imgui.InputText("##SearchInput", auctioneer.search.input, 48)
 
     if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
-        imgui.TableSetupColumn("##Item", ImGuiTableFlags_ScrollY)
+        imgui.TableSetupColumn("##ItemColumn", ImGuiTableFlags_ScrollY)
 
         if auctioneer.search.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
@@ -132,7 +205,7 @@ function ui.drawSearch()
 end
 
 function ui.drawItemPreview()
-    if imgui.BeginChild("##ItemPreview", { 0, 150 }, true) then
+    if imgui.BeginChild("##ItemPreviewChild", { 0, 150 }, true) then
         if auctioneer.search.selectedItem ~= nil then
             local id = auctioneer.search.selectedItem
             local item = items[id]
@@ -147,7 +220,7 @@ function ui.drawItemPreview()
                 end
             end
 
-            if preview.textureCache[id] == nil then
+            if id ~= nil and preview.textureCache[id] == nil then
                 preview.textureCache[id] = utils.createTextureFromGame(item.bitmap, item.imageSize)
             end
             local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[id]))
@@ -172,7 +245,7 @@ function ui.drawItemPreview()
             imgui.Text(('%s [%i]'):format(item.shortName, id))
             imgui.TextWrapped(utils.escapeString(item.description))
             imgui.Text(('Lv %i'):format(item.level))
-            imgui.Text(utils.getJobs(item.jobs):join(', '))
+            imgui.Text(utils.getJobsString(item.jobs):join(', '))
             imgui.PopTextWrapPos()
             imgui.EndGroup()
         end
@@ -195,7 +268,7 @@ function ui.drawBuySellCommands()
     imgui.Text("Quantity")
     imgui.SameLine()
     imgui.SetNextItemWidth(150)
-    if imgui.InputInt("##Quantity", quantityInput) then
+    if imgui.InputInt("##QuantityInputInt", quantityInput) then
         if quantityInput[1] < 1 then
             quantityInput = { 1 }
         end
@@ -205,7 +278,7 @@ function ui.drawBuySellCommands()
     imgui.Text("Price")
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    imgui.InputText("##Price", priceInput, 48)
+    imgui.InputText("##PriceInput", priceInput, 48)
 
     if imgui.Checkbox("Stack", stack) then
         ffxiah.reset(false)
@@ -406,7 +479,9 @@ end
 
 function ui.drawBuySellTab()
     ui.drawGlobalCommands()
-    ui.drawFilters()
+    if auctioneer.config.searchFilters[1] then
+        ui.drawFilters()
+    end
     ui.drawSearch()
     if auctioneer.config.itemPreview[1] then
         ui.drawItemPreview()
@@ -485,6 +560,10 @@ function ui.drawSettingsTab()
     end
 
     if imgui.Checkbox("Remove next buy tasks from queue if a task fails", auctioneer.config.removeFailedBuyTasks) then
+        settings.save()
+    end
+
+    if imgui.Checkbox("Enable search filters", auctioneer.config.searchFilters) then
         settings.save()
     end
 end
