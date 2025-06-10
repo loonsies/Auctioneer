@@ -21,7 +21,7 @@ function packets.handleIncomingPacket(e)
 
                 local id = struct.unpack("H", e.data:sub(15, 16))
                 entry = {
-                    type = task.type.confirmSell,
+                    type = taskTypes.confirmSell,
                     packet = packet,
                     id = id,
                     name = items[id].shortName,

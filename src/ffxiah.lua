@@ -102,13 +102,12 @@ function ffxiah.fetch(id, stack)
     local stock = body:match('<td>%s*Stock%s*</td>%s*<td><span[^>]->(%d+)</span>')
     local rate = body:match('Rate</td>%s*<td><span[^>]->([^<]+)</span>')
     local median = body:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
-    local salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
 
     if sales ~= nil and #sales > 0 then
         auctioneer.priceHistory.sales = sales
         auctioneer.priceHistory.stock = stock
         auctioneer.priceHistory.rate = rate
-        auctioneer.priceHistory.salesPerDay = salesPerDay
+        auctioneer.priceHistory.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
         auctioneer.priceHistory.median = median
     end
 
@@ -133,6 +132,7 @@ function ffxiah.fetch(id, stack)
         end
         return formatted
     end)
+
     if err2 then
         return
     end
@@ -144,6 +144,16 @@ function ffxiah.fetch(id, stack)
     if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.bazaar == nil then
         auctioneer.priceHistory.fetching = false
     end
+end
+
+function ffxiah.reset(fetching)
+    auctioneer.priceHistory.sales = nil
+    auctioneer.priceHistory.stock = nil
+    auctioneer.priceHistory.rate = nil
+    auctioneer.priceHistory.salesPerDay = nil
+    auctioneer.priceHistory.median = nil
+    auctioneer.priceHistory.bazaar = nil
+    auctioneer.priceHistory.fetching = fetching
 end
 
 return ffxiah

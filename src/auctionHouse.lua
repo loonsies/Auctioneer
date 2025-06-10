@@ -1,12 +1,5 @@
 local auctionHouse = {}
 
-auctionHouse.actions = {
-    buy = 1,
-    sell = 2,
-    [1] = "Buy",
-    [2] = "Sell"
-}
-
 function auctionHouse.updateAuctionHouse(packet)
     local slot = packet:byte(0x05 + 1)
     local status = packet:byte(0x14 + 1)
@@ -14,6 +7,7 @@ function auctionHouse.updateAuctionHouse(packet)
         if status == 0x00 then
             auctioneer.AuctionHouse[slot] = {}
             auctioneer.AuctionHouse[slot].status = "Empty"
+            return true
         else
             if status == 0x03 then
                 auctioneer.AuctionHouse[slot].status = "On auction"
@@ -26,8 +20,10 @@ function auctionHouse.updateAuctionHouse(packet)
             auctioneer.AuctionHouse[slot].count = packet:byte(0x2A + 1)
             auctioneer.AuctionHouse[slot].price = struct.unpack("i", packet, 0x2C + 1)
             auctioneer.AuctionHouse[slot].timestamp = struct.unpack("i", packet, 0x38 + 1)
+            return true
         end
     end
+    return false
 end
 
 function auctionHouse.buy(item, single, price)
@@ -112,7 +108,7 @@ function auctionHouse.clearSales()
         if auctioneer.AuctionHouse[slot] ~= nil then
             if auctioneer.AuctionHouse[slot].status == "Sold" or auctioneer.AuctionHouse[slot].status == "Not Sold" then
                 entry = {
-                    type = task.type.clearSlot,
+                    type = taskTypes.clearSlot,
                     slot = slot
                 }
                 task.enqueue(entry)
@@ -128,6 +124,7 @@ end
 function auctionHouse.clearSlot(slot)
     if slot == nil or slot < 0 or slot > 6 then
         print(chat.header(addon.name):append(chat.error("Invalid slot number")))
+        return false
     end
 
     local log = string.format('Slot %i (%s): sending clear packet', slot + 1, auctioneer.AuctionHouse[slot].status)
@@ -135,10 +132,11 @@ function auctionHouse.clearSlot(slot)
 
     print(chat.header(addon.name):append(chat.color2(200, log)))
     packetManager:AddOutgoingPacket(0x4E, packet)
+    return true
 end
 
 function auctionHouse.proposal(action, itemName, single, price, quantity)
-    if action == nil or (action ~= auctionHouse.actions.buy and action ~= auctionHouse.actions.sell) then
+    if action == nil or (action ~= auctionHouseActions.buy and action ~= auctionHouseActions.sell) then
         print(chat.header(addon.name):append(chat.error("Invalid action type")))
         return false
     end
@@ -166,33 +164,33 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
     end
 
     quantity = tonumber(quantity) or 1
-    if quantity == nil or quantity < 1 or (action == auctionHouse.actions.sell and quantity > 7) then
+    if quantity == nil or quantity < 1 or (action == auctionHouseActions.sell and quantity > 7) then
         print(chat.header(addon.name):append(chat.error("Invalid quantity")))
         return false
     end
 
     price = price:gsub("%p", "")
     if price == nil or string.match(price, "%a") ~= nil or tonumber(price) == nil or tonumber(price) < 1 or
-        action == auctionHouse.actions.sell and tonumber(price) > 999999999 or
-        action == auctionHouse.actions.buy and tonumber(price) > memoryManager:GetInventory():GetContainerItem(0, 0).Count then
+        action == auctionHouseActions.sell and tonumber(price) > 999999999 or
+        action == auctionHouseActions.buy and tonumber(price) > memoryManager:GetInventory():GetContainerItem(0, 0).Count then
         print(chat.header(addon.name):append(chat.error("Invalid price")))
         return false
     end
     price = tonumber(price)
 
     entry = {
-        type = action == auctionHouse.actions.buy and task.type.buy or auctionHouse.actions.sell,
+        type = action == auctionHouseActions.buy and taskTypes.buy or auctionHouseActions.sell,
         item = item,
         single = single,
         price = price
     }
 
-    if action == auctionHouse.actions.buy then
+    if action == auctionHouseActions.buy then
         for i = 1, quantity do
             task.enqueue(entry)
         end
         return true
-    elseif action == auctionHouse.actions.sell then
+    elseif action == auctionHouseActions.sell then
         for i = 1, quantity do
             task.enqueue(entry)
         end
