@@ -483,6 +483,10 @@ function ui.drawSettingsTab()
     if imgui.Checkbox("Display auction house tab", auctioneer.config.auctionHouse) then
         settings.save()
     end
+
+    if imgui.Checkbox("Remove next buy tasks from queue if a task fails", auctioneer.config.removeFailedBuyTasks) then
+        settings.save()
+    end
 end
 
 function ui.drawUI()

@@ -6,6 +6,7 @@ local default = T {
     itemPreview = { true },
     priceHistory = { true },
     auctionHouse = { true },
+    removeFailedBuyTasks = { true },
     server = { 1 }
 }
 

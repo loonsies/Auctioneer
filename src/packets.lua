@@ -4,8 +4,8 @@ function packets.handleIncomingPacket(e)
     if e.id == 0x04C then
         local pType = e.data:byte(5)
         if pType == 0x04 then -- Sell confirm packet
-            -- lastItemId = struct.unpack("H", e.data:sub(15, 16))
-            -- lastIndex = struct.unpack("H", e.data:sub(13, 14))
+            -- lastIndex = struct.unpack("H", e.data:sub(15, 16))
+            -- lastItemId = struct.unpack("H", e.data:sub(13, 14))
             -- lastSingle = e.data:byte(17)
             -- lastFee = struct.unpack("i", e.data, 9)
 
@@ -50,6 +50,16 @@ function packets.handleIncomingPacket(e)
                 print(chat.header(addon.name):append(chat.success("Bid success")))
             elseif e.data:byte(7) == 0xC5 then
                 print(chat.header(addon.name):append(chat.warning("Bid Failed")))
+
+                if auctioneer.config.removeFailedBuyTasks[1] then
+                    local entry = {
+                        type = taskTypes.buy,
+                        index = struct.unpack("H", e.data:sub(13, 14)),
+                        single = e.data:byte(17),
+                        price = struct.unpack("i", e.data, 9),
+                    }
+                    task.filter(entry)
+                end
             end
         end
     elseif e.id == 0x00B then
