@@ -178,7 +178,7 @@ function ui.drawSearch()
 
         if auctioneer.search.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
-            clipper:Begin(#auctioneer.search.results, -1);
+            clipper:Begin(#auctioneer.search.results, -1)
 
             while clipper:Step() do
                 for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
@@ -569,7 +569,7 @@ function ui.drawSettingsTab()
 end
 
 function ui.drawUI()
-    imgui.SetNextWindowSizeConstraints(minSize, { FLT_MAX, FLT_MAX });
+    imgui.SetNextWindowSizeConstraints(minSize, { FLT_MAX, FLT_MAX })
     if imgui.Begin("Auctioneer", auctioneer.visible) then
         if imgui.BeginTabBar("##TabBar") then
             if imgui.BeginTabItem("Buy & Sell") then

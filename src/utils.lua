@@ -128,19 +128,19 @@ end
 
 function utils.createTextureFromFile(path)
     if (path ~= nil) then
-        local dx_texture_ptr = ffi.new('IDirect3DTexture8*[1]');
+        local dx_texture_ptr = ffi.new('IDirect3DTexture8*[1]')
         local d3d8_device = d3d8.get_device()
         if (ffi.C.D3DXCreateTextureFromFileA(d3d8_device, path, dx_texture_ptr) == ffi.C.S_OK) then
-            local texture = d3d8.gc_safe_release(ffi.cast('IDirect3DTexture8*', dx_texture_ptr[0]));
-            local result, desc = texture:GetLevelDesc(0);
+            local texture = d3d8.gc_safe_release(ffi.cast('IDirect3DTexture8*', dx_texture_ptr[0]))
+            local result, desc = texture:GetLevelDesc(0)
             if result == 0 then
-                tx         = {};
-                tx.Texture = texture;
-                tx.Width   = desc.Width;
-                tx.Height  = desc.Height;
-                return tx;
+                tx         = {}
+                tx.Texture = texture
+                tx.Width   = desc.Width
+                tx.Height  = desc.Height
+                return tx
             end
-            return;
+            return
         end
     end
 end

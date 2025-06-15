@@ -87,7 +87,7 @@ end
 
 ashita.events.register("packet_out", "packet_out_cb", function(e)
     if (e.id == 0x15) then
-        handleQueue();
+        handleQueue()
     end
 end)
 

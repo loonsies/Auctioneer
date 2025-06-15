@@ -1,14 +1,14 @@
 addon.name = "Auctioneer"
 addon.version = "2.14"
 addon.author = "Original addon by Ivaar, ported and modified by looney"
-addon.desc = 'Interact with auction house using commands.';
-addon.link = 'https://github.com/loonsies/auctioneer';
+addon.desc = 'Interact with auction house using commands.'
+addon.link = 'https://github.com/loonsies/auctioneer'
 
 -- Ashita dependencies
 require "common"
 settings = require("settings")
 chat = require("chat")
-imgui = require('imgui');
+imgui = require('imgui')
 ffi = require('ffi')
 d3d8 = require('d3d8')
 http = require("socket.http")
