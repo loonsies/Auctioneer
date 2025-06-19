@@ -114,11 +114,11 @@ function ffxiah.fetch(id, stack)
     local bazaar, err2 = handleJsonField(body, "bazaar", id, function(bazaarTable)
         local formatted = {}
         for _, entry in ipairs(bazaarTable) do
-            local serverAndPlayerHtml = entry[1]
-            local price = entry[2]
-            local quantity = entry[3]
-            local zone = entry[4]
-            local timestamp = entry[5]
+            local serverAndPlayerHtml = type(entry[1]) == 'string' and entry[1] or ""
+            local price = type(entry[2]) == 'number' and entry[2] or 0
+            local quantity = type(entry[3]) == 'number' and entry[3] or 0
+            local zone = type(entry[4]) == 'string' and entry[4] or ""
+            local timestamp = type(entry[5]) == 'number' and entry[5] or 0
 
             local server, player = serverAndPlayerHtml:match("([^.]+)%.<a href='.-/([^/]+)'>")
             table.insert(formatted, {
