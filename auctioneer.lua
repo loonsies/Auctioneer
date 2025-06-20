@@ -14,9 +14,6 @@ d3d8 = require('d3d8')
 http = require("socket.http")
 ltn12 = require("socket.ltn12")
 json = require("json")
-resourceManager = AshitaCore:GetResourceManager()
-packetManager = AshitaCore:GetPacketManager()
-memoryManager = AshitaCore:GetMemoryManager()
 
 -- Local dependencies
 commands = require("src/commands")

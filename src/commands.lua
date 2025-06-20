@@ -58,7 +58,7 @@ end
 
 function commands.handleCommand(args)
     local command = string.lower(args[1])
-    local zone = resourceManager:GetString("zones.names", memoryManager:GetParty():GetMemberZone(0))
+    local zone = AshitaCore:GetResourceManager():GetString("zones.names", AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0))
     local isInZone = table.hasvalue(zones, zone)
 
     if command ~= "/ah" and command ~= "/buy" and command ~= "/sell" and command ~= "/inbox" and command ~= "/outbox" and

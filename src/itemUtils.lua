@@ -10,7 +10,7 @@ function itemUtils.load()
 
     for id = 1, 65534 do -- 65535 is gil
         local category = categoryLookup[id] or 0
-        local item = resourceManager:GetItemById(id)
+        local item = AshitaCore:GetResourceManager():GetItemById(id)
         if item then
             local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
             local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)

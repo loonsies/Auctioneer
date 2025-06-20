@@ -6,8 +6,8 @@ function utils.commaValue(n)
 end
 
 function utils.getCurrentGils()
-    if memoryManager and memoryManager:GetInventory() and memoryManager:GetInventory():GetContainerItem(0, 0) then
-        return memoryManager:GetInventory():GetContainerItem(0, 0).Count
+    if AshitaCore:GetMemoryManager() and AshitaCore:GetMemoryManager():GetInventory() and AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0) then
+        return AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count
     else
         return 0
     end
@@ -18,7 +18,7 @@ function utils.hasFlag(n, flag)
 end
 
 function utils.findItem(item_id, item_count)
-    local items = memoryManager:GetInventory()
+    local items = AshitaCore:GetMemoryManager():GetInventory()
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
         if item ~= nil and item.Id == item_id and item.Flags == 0 and item.Count >= item_count then
@@ -29,15 +29,15 @@ function utils.findItem(item_id, item_count)
 end
 
 function utils.getItem(id)
-    return resourceManager:GetItemById(tonumber(id))
+    return AshitaCore:GetResourceManager():GetItemById(tonumber(id))
 end
 
 function utils.getItemName(id)
-    return resourceManager:GetItemById(tonumber(id)).Name[1]
+    return AshitaCore:GetResourceManager():GetItemById(tonumber(id)).Name[1]
 end
 
 function utils.getItemById(id)
-    return resourceManager:GetItemById(tonumber(id))
+    return AshitaCore:GetResourceManager():GetItemById(tonumber(id))
 end
 
 function utils.timef(ts)

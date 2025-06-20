@@ -40,7 +40,7 @@ function auctionHouse.buy(item, single, price)
     local packet = trans:totable()
 
     print(chat.header(addon.name):append(chat.color2(200, log)))
-    packetManager:AddOutgoingPacket(0x4E, packet)
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
     return true
 end
 
@@ -70,7 +70,7 @@ function auctionHouse.sell(item, single, price)
     local packet = trans:totable()
 
     print(chat.header(addon.name):append(chat.color2(200, log)))
-    packetManager:AddOutgoingPacket(0x4E, packet)
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
     return true
 end
 
@@ -80,7 +80,7 @@ function auctionHouse.sendConfirmSell(packet, id, name, single)
             single == 1 and "[Single]" or "[Stack]", id)
 
         print(chat.header(addon.name):append(chat.color2(200, log)))
-        packetManager:AddOutgoingPacket(0x4E, packet)
+        AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
         return true
     end
     return false
@@ -131,7 +131,7 @@ function auctionHouse.clearSlot(slot)
     local packet = struct.pack("bbxxbbi32i22", 0x4E, 0x1E, 0x10, slot, 0x00, 0x00):totable()
 
     print(chat.header(addon.name):append(chat.color2(200, log)))
-    packetManager:AddOutgoingPacket(0x4E, packet)
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
     return true
 end
 
@@ -142,7 +142,7 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
     end
 
     itemName = AshitaCore:GetChatManager():ParseAutoTranslate(itemName, false)
-    local item = resourceManager:GetItemByName(itemName, 2)
+    local item = AshitaCore:GetResourceManager():GetItemByName(itemName, 2)
     if item == nil then
         print(chat.header(addon.name):append(chat.error(string.format('"%s" not a valid item name', itemName))))
         return false
@@ -172,7 +172,7 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
     price = price:gsub("%p", "")
     if price == nil or string.match(price, "%a") ~= nil or tonumber(price) == nil or tonumber(price) < 1 or
         action == auctionHouseActions.sell and tonumber(price) > 999999999 or
-        action == auctionHouseActions.buy and tonumber(price) > memoryManager:GetInventory():GetContainerItem(0, 0).Count then
+        action == auctionHouseActions.buy and tonumber(price) > AshitaCore:GetMemoryManager():GetInventory():GetContainerItem(0, 0).Count then
         print(chat.header(addon.name):append(chat.error("Invalid price")))
         return false
     end
