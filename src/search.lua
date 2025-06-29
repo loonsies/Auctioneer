@@ -6,7 +6,8 @@ function search.update()
 
     for id, item in pairs(items) do
         if auctioneer.search.category == 999 or auctioneer.search.category == item.category then
-            if item.longName and string.find(item.longName:lower(), input:lower()) or item.shortName and string.find(item.shortName:lower(), input:lower()) then
+            if item.longName and string.find(item.longName:lower(), input:lower(), 1, true) or item.shortName and
+                string.find(item.shortName:lower(), input:lower(), 1, true) then
                 if auctioneer.config.searchFilters[1] then
                     if item.level >= auctioneer.search.lvMinInput[1] and item.level <= auctioneer.search.lvMaxInput[1] then
                         if #auctioneer.search.jobSelected > 0 then
