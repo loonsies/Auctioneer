@@ -1,0 +1,4 @@
+if you're still tweaking it, one suggestion might be to pop up the ffxiah results as a seperate imgui window (that way you could compare multiple results onscreen at once and there wouldn't be a need to requery the same item if you go back and forth)
+could accomplish that by keeping a table of active searches and looping it in render, since item should already have a unique key you could use that for the window title
+
+inv tab along search
