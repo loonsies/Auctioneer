@@ -1,6 +1,8 @@
 {
-  "Lua.diagnostics.disable": ["lowercase-global", "undefined-field"],
-  "Lua.diagnostics.globals": [
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "format.enable": true,
+  "diagnostics.disable": ["lowercase-global", "undefined-field"],
+  "diagnostics.globals": [
     "addon",
     "ashita",
     "bit",
@@ -23,6 +25,6 @@
     "FontDrawFlags",
     "ImGuiListClipper"
   ],
-  "Lua.runtime.version": "LuaJIT",
-  "Lua.workspace.library": ["G:\\Ashita\\addons\\libs"]
+  "runtime.version": "LuaJIT",
+  "workspace.library": ["G:\\Ashita\\addons\\libs"]
 }

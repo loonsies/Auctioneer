@@ -2,7 +2,7 @@ local ui = {}
 
 local minSize = { 400, 400 }
 local quantityInput = { 1 }
-local priceInput = { "" }
+local priceInput = { '' }
 local stack = { false }
 local gilIcon = nil
 
@@ -47,12 +47,12 @@ function ui.update()
 end
 
 function ui.drawGlobalCommands()
-    if imgui.Button("Open AH") then
-        commands.handleCommand({ "/ah", "menu" })
+    if imgui.Button('Open AH') then
+        commands.handleCommand({ '/ah', 'menu' })
     end
     imgui.SameLine()
-    if imgui.Button("Clear Sales") then
-        commands.handleCommand({ "/ah", "clear" })
+    if imgui.Button('Clear Sales') then
+        commands.handleCommand({ '/ah', 'clear' })
     end
 end
 
@@ -62,17 +62,17 @@ function ui.drawConfirmationModal()
     end
 
     imgui.SetNextWindowSize({ 0, 0 }, ImGuiCond_Always)
-    imgui.OpenPopup("Confirm transaction")
+    imgui.OpenPopup('Confirm transaction')
 
-    if imgui.BeginPopupModal("Confirm transaction", nil, ImGuiWindowFlags_AlwaysAutoResize) then
+    if imgui.BeginPopupModal('Confirm transaction', nil, ImGuiWindowFlags_AlwaysAutoResize) then
         name, single, price, quantity = table.unpack(modal.args)
 
-        imgui.Text("Are you sure you want to proceed with this transaction?")
+        imgui.Text('Are you sure you want to proceed with this transaction?')
         imgui.Separator()
-        imgui.Text(string.format("%s %s of %s for %s", auctionHouseActions[modal.action],
-            single == "0" and "Single" or "Stack", name, price))
-        imgui.Text(string.format("This task will be executed %s times", quantity))
-        if imgui.Button("OK", { 120, 0 }) then
+        imgui.Text(string.format('%s %s of %s for %s', auctionHouseActions[modal.action],
+            single == '0' and 'Single' or 'Stack', name, price))
+        imgui.Text(string.format('This task will be executed %s times', quantity))
+        if imgui.Button('OK', { 120, 0 }) then
             if auctionHouse.proposal(modal.action, name, single, price, quantity) then
                 quantityInput = { 1 }
             end
@@ -80,7 +80,7 @@ function ui.drawConfirmationModal()
             imgui.CloseCurrentPopup()
         end
         imgui.SameLine()
-        if imgui.Button("Cancel", { 120, 0 }) then
+        if imgui.Button('Cancel', { 120, 0 }) then
             modal.visible = false
             imgui.CloseCurrentPopup()
         end
@@ -90,10 +90,10 @@ function ui.drawConfirmationModal()
 end
 
 function ui.drawFilters()
-    imgui.Text("Category")
+    imgui.Text('Category')
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    if imgui.BeginCombo("##CategoryCombo", categories.list[auctioneer.search.category]) then
+    if imgui.BeginCombo('##CategoryCombo', categories.list[auctioneer.search.category]) then
         for _, id in ipairs(categories.order) do
             local category = categories.list[id]
             local is_selected = (auctioneer.search.category == id)
@@ -104,10 +104,10 @@ function ui.drawFilters()
         imgui.EndCombo()
     end
 
-    imgui.Text("Lv. Min")
+    imgui.Text('Lv. Min')
     imgui.SameLine()
     imgui.SetNextItemWidth(100)
-    if imgui.InputInt("##LvMin", auctioneer.search.lvMinInput) then
+    if imgui.InputInt('##LvMin', auctioneer.search.lvMinInput) then
         if auctioneer.search.lvMinInput[1] < 0 then
             auctioneer.search.lvMinInput[1] = 0
         elseif auctioneer.search.lvMinInput[1] > 99 then
@@ -118,10 +118,10 @@ function ui.drawFilters()
     end
     imgui.SameLine()
 
-    imgui.Text("Lv. Max")
+    imgui.Text('Lv. Max')
     imgui.SameLine()
     imgui.SetNextItemWidth(100)
-    if imgui.InputInt("##LvMax", auctioneer.search.lvMaxInput) then
+    if imgui.InputInt('##LvMax', auctioneer.search.lvMaxInput) then
         if auctioneer.search.lvMaxInput[1] < 0 then
             auctioneer.search.lvMaxInput[1] = 0
         elseif auctioneer.search.lvMaxInput[1] > 99 then
@@ -131,16 +131,16 @@ function ui.drawFilters()
         end
     end
 
-    imgui.Text("Jobs")
+    imgui.Text('Jobs')
     imgui.SetNextItemWidth(-1)
     imgui.SameLine()
-    local jobComboText = ""
+    local jobComboText = ''
     if #auctioneer.search.jobSelected == 0 then
-        jobComboText = "No jobs selected"
+        jobComboText = 'No jobs selected'
     else
-        jobComboText = string.format("%i jobs selected", #auctioneer.search.jobSelected)
+        jobComboText = string.format('%i jobs selected', #auctioneer.search.jobSelected)
     end
-    if imgui.BeginCombo("##JobSelectCombo", jobComboText) then
+    if imgui.BeginCombo('##JobSelectCombo', jobComboText) then
         for id, jobName in ipairs(jobs) do
             local isSelected = false
             for _, selectedId in ipairs(auctioneer.search.jobSelected) do
@@ -169,12 +169,12 @@ function ui.drawFilters()
 end
 
 function ui.drawSearch()
-    imgui.Text("Search (" .. #auctioneer.search.results .. ")")
+    imgui.Text('Search (' .. #auctioneer.search.results .. ')')
     imgui.SetNextItemWidth(-1)
-    imgui.InputText("##SearchInput", auctioneer.search.input, 48)
+    imgui.InputText('##SearchInput', auctioneer.search.input, 48)
 
-    if imgui.BeginTable("##SearchResultsTableChild", 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
-        imgui.TableSetupColumn("##ItemColumn", ImGuiTableFlags_ScrollY)
+    if imgui.BeginTable('##SearchResultsTableChild', 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
+        imgui.TableSetupColumn('##ItemColumn', ImGuiTableFlags_ScrollY)
 
         if auctioneer.search.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
@@ -188,7 +188,7 @@ function ui.drawSearch()
                     local item = auctioneer.search.results[i + 1]
                     local itemLabel = items[item].shortName
                     local isSelected = (auctioneer.search.selectedItem == item)
-                    if imgui.Selectable(itemLabel, isSelected) then
+                    if imgui.Selectable(itemLabel, isSelected) and not auctioneer.priceHistory.fetching then
                         auctioneer.search.selectedItem = item
                     end
                 end
@@ -205,7 +205,7 @@ function ui.drawSearch()
 end
 
 function ui.drawItemPreview()
-    if imgui.BeginChild("##ItemPreviewChild", { 0, 150 }, true) then
+    if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, true) then
         if auctioneer.search.selectedItem ~= nil then
             local id = auctioneer.search.selectedItem
             local item = items[id]
@@ -265,33 +265,33 @@ function ui.drawBuySellCommands()
         end
     end
 
-    imgui.Text("Quantity")
+    imgui.Text('Quantity')
     imgui.SameLine()
     imgui.SetNextItemWidth(150)
-    if imgui.InputInt("##QuantityInputInt", quantityInput) then
+    if imgui.InputInt('##QuantityInputInt', quantityInput) then
         if quantityInput[1] < 1 then
             quantityInput = { 1 }
         end
     end
 
     imgui.SameLine()
-    imgui.Text("Price")
+    imgui.Text('Price')
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    imgui.InputText("##PriceInput", priceInput, 48)
+    imgui.InputText('##PriceInput', priceInput, 48)
 
-    if imgui.Checkbox("Stack", stack) then
+    if imgui.Checkbox('Stack', stack) then
         ffxiah.reset(false)
     end
     imgui.SameLine()
 
-    if imgui.Button("Buy") then
-        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == "" then
-            print(chat.header(addon.name):append(chat.error("Please enter a price")))
+    if imgui.Button('Buy') then
+        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
+            print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.search.selectedItem == nil then
-            print(chat.header(addon.name):append(chat.error("Please select an item")))
+            print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.AuctionHouse == nil then
-            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
+            print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -299,14 +299,14 @@ function ui.drawBuySellCommands()
                     modal.action = auctionHouseActions.buy
                     modal.args = {
                         items[auctioneer.search.selectedItem].shortName,
-                        stack[1] and "1" or "0",
+                        stack[1] and '1' or '0',
                         priceInput[1],
                         quantityInput[1],
                     }
                 end
             else
                 if auctionHouse.proposal(auctionHouseActions.buy, items[auctioneer.search.selectedItem].shortName,
-                        stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
+                        stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
                     quantityInput = { 1 }
                 end
             end
@@ -314,13 +314,13 @@ function ui.drawBuySellCommands()
     end
     imgui.SameLine()
 
-    if imgui.Button("Sell") then
-        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == "" then
-            print(chat.header(addon.name):append(chat.error("Please enter a price")))
+    if imgui.Button('Sell') then
+        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
+            print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.search.selectedItem == nil then
-            print(chat.header(addon.name):append(chat.error("Please select an item")))
+            print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.AuctionHouse == nil then
-            print(chat.header(addon.name):append(chat.error("Interact with auction house or use /ah menu first")))
+            print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
@@ -328,14 +328,14 @@ function ui.drawBuySellCommands()
                     modal.action = auctionHouseActions.sell
                     modal.args = {
                         items[auctioneer.search.selectedItem].shortName,
-                        stack[1] and "1" or "0",
+                        stack[1] and '1' or '0',
                         priceInput[1],
                         quantityInput[1],
                     }
                 end
             else
                 if auctionHouse.proposal(auctionHouseActions.sell, items[auctioneer.search.selectedItem].shortName,
-                        stack[1] and "1" or "0", priceInput[1], quantityInput[1]) then
+                        stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
                     quantityInput = { 1 }
                 end
             end
@@ -364,16 +364,16 @@ function ui.drawPriceHistory()
     local availX, availY = imgui.GetContentRegionAvail()
 
     imgui.NewLine()
-    imgui.Text("FFXIAH")
+    imgui.Text('FFXIAH')
     imgui.SameLine()
     imgui.Dummy({ 25, 0 })
 
     imgui.SameLine(availX - 200)
-    imgui.Text("Server")
+    imgui.Text('Server')
     imgui.SameLine()
     imgui.SetNextItemWidth(150)
 
-    local currentServerName = "Unknown"
+    local currentServerName = 'Unknown'
     for _, server in ipairs(servers) do
         if server.id == auctioneer.config.server[1] then
             currentServerName = server.name
@@ -381,7 +381,7 @@ function ui.drawPriceHistory()
         end
     end
 
-    if imgui.BeginCombo("##ServerSelectCombo", currentServerName) then
+    if imgui.BeginCombo('##ServerSelectCombo', currentServerName) then
         for _, server in ipairs(servers) do
             local isSelected = auctioneer.config.server[1] == server.id
             if imgui.Selectable(server.name, isSelected) and auctioneer.config.server[1] ~= server.id then
@@ -394,9 +394,9 @@ function ui.drawPriceHistory()
     end
 
     if auctioneer.priceHistory.fetching == false then
-        if imgui.Button("Fetch prices & bazaar") then
+        if imgui.Button('Fetch prices & bazaar') then
             if auctioneer.search.selectedItem == nil then
-                print(chat.header(addon.name):append(chat.error("Please select an item")))
+                print(chat.header(addon.name):append(chat.error('Please select an item')))
             else
                 ffxiah.reset(true)
                 ffxiah.fetch(auctioneer.search.selectedItem, stack[1])
@@ -404,28 +404,28 @@ function ui.drawPriceHistory()
         end
     else
         if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.bazaar == nil then
-            imgui.Text("Fetching...")
+            imgui.Text('Fetching...')
         else
             if auctioneer.priceHistory.sales ~= nil then
-                imgui.Text("Price history")
+                imgui.Text('Price history')
 
-                imgui.Text("Stock: ")
+                imgui.Text('Stock: ')
                 imgui.SameLine(0, 0)
                 imgui.TextColored(utils.hexToImVec4(utils.getStockColor(auctioneer.priceHistory.stock)),
                     auctioneer.priceHistory.stock)
-                imgui.Text(string.format("Rate: "))
+                imgui.Text(string.format('Rate: '))
                 imgui.SameLine(0, 0)
                 imgui.TextColored(utils.hexToImVec4(utils.getSalesRatingColor(auctioneer.priceHistory.rate)),
                     utils.getSalesRatingLabel(auctioneer.priceHistory.rate))
                 imgui.SameLine(0, 0)
-                imgui.Text(string.format(" (%s sold /day)", auctioneer.priceHistory.salesPerDay))
-                imgui.Text(string.format("Median: %s", utils.commaValue(auctioneer.priceHistory.median)))
+                imgui.Text(string.format(' (%s sold /day)', auctioneer.priceHistory.salesPerDay))
+                imgui.Text(string.format('Median: %s', utils.commaValue(auctioneer.priceHistory.median)))
 
-                if imgui.BeginTable("##PriceHistoryTable", 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
-                    imgui.TableSetupColumn("Date")
-                    imgui.TableSetupColumn("Seller")
-                    imgui.TableSetupColumn("Buyer")
-                    imgui.TableSetupColumn("Price")
+                if imgui.BeginTable('##PriceHistoryTable', 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
+                    imgui.TableSetupColumn('Date')
+                    imgui.TableSetupColumn('Seller')
+                    imgui.TableSetupColumn('Buyer')
+                    imgui.TableSetupColumn('Price')
                     imgui.TableHeadersRow()
 
                     for i, sale in ipairs(auctioneer.priceHistory.sales) do
@@ -438,7 +438,7 @@ function ui.drawPriceHistory()
                         imgui.Text(sale.buyer)
                         imgui.TableSetColumnIndex(3)
                         local priceStr = tostring(sale.price)
-                        if imgui.Selectable(utils.commaValue(sale.price) .. "##" .. i) then
+                        if imgui.Selectable(utils.commaValue(sale.price) .. '##' .. i) then
                             priceInput[1] = priceStr
                         end
                     end
@@ -447,20 +447,20 @@ function ui.drawPriceHistory()
             end
 
             if auctioneer.priceHistory.bazaar ~= nil then
-                imgui.Text("Bazaar")
+                imgui.Text('Bazaar')
 
-                if imgui.BeginTable("##BazaarTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
-                    imgui.TableSetupColumn("Player")
-                    imgui.TableSetupColumn("Price")
-                    imgui.TableSetupColumn("Quantity")
-                    imgui.TableSetupColumn("Zone")
-                    imgui.TableSetupColumn("Last seen")
+                if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
+                    imgui.TableSetupColumn('Player')
+                    imgui.TableSetupColumn('Price')
+                    imgui.TableSetupColumn('Quantity')
+                    imgui.TableSetupColumn('Zone')
+                    imgui.TableSetupColumn('Last seen')
                     imgui.TableHeadersRow()
 
                     for i, bazaar in ipairs(auctioneer.priceHistory.bazaar) do
                         imgui.TableNextRow()
                         imgui.TableSetColumnIndex(0)
-                        imgui.Text(string.format("%s.%s", bazaar.server, bazaar.player))
+                        imgui.Text(string.format('%s.%s', bazaar.server, bazaar.player))
                         imgui.TableSetColumnIndex(1)
                         imgui.Text(tostring(bazaar.price))
                         imgui.TableSetColumnIndex(2)
@@ -495,27 +495,27 @@ end
 function ui.drawAuctionHouseTab()
     ui.drawGlobalCommands()
     if auctioneer.auctionHouseInitialized == false then
-        imgui.Text("Auction House not initialized.")
-        imgui.Text("Interact with it to initialize this tab.")
+        imgui.Text('Auction House not initialized.')
+        imgui.Text('Interact with it to initialize this tab.')
     else
-        if imgui.BeginTable("##AuctionHouseTable", 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg)) then
-            imgui.TableSetupColumn("Status")
-            imgui.TableSetupColumn("Item")
-            imgui.TableSetupColumn("Expires in")
-            imgui.TableSetupColumn("Date")
-            imgui.TableSetupColumn("Price")
+        if imgui.BeginTable('##AuctionHouseTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg)) then
+            imgui.TableSetupColumn('Status')
+            imgui.TableSetupColumn('Item')
+            imgui.TableSetupColumn('Expires in')
+            imgui.TableSetupColumn('Date')
+            imgui.TableSetupColumn('Price')
             imgui.TableHeadersRow()
 
             for x = 0, 6 do
                 data = {}
                 data.status = auctioneer.AuctionHouse[x].status
-                if data.status ~= "Expired" and data.status ~= "Empty" then
-                    data.timer = auctioneer.AuctionHouse[x].status == "On auction" and
+                if data.status ~= 'Expired' and data.status ~= 'Empty' then
+                    data.timer = auctioneer.AuctionHouse[x].status == 'On auction' and
                         auctioneer.AuctionHouse[x].timestamp + 829440 or auctioneer.AuctionHouse[x].timestamp
-                    data.expiresIn = string.format("%s",
-                        (auctioneer.AuctionHouse[x].status == "On auction" and os.time() - data.timer > 0) and "Expired" or
+                    data.expiresIn = string.format('%s',
+                        (auctioneer.AuctionHouse[x].status == 'On auction' and os.time() - data.timer > 0) and 'Expired' or
                         utils.timef(math.abs(os.time() - data.timer)))
-                    data.date = os.date("%c", data.timer)
+                    data.date = os.date('%c', data.timer)
                     data.count = tostring(auctioneer.AuctionHouse[x].count)
                     data.item = auctioneer.AuctionHouse[x].item .. ' (' .. data.count .. ')'
                     data.price = utils.commaValue(auctioneer.AuctionHouse[x].price)
@@ -531,7 +531,7 @@ function ui.drawAuctionHouseTab()
                     imgui.Text(data.date)
                     imgui.TableSetColumnIndex(4)
                     imgui.Text(data.price)
-                elseif data.status == "Empty" then
+                elseif data.status == 'Empty' then
                     imgui.TableNextRow()
                     imgui.TableSetColumnIndex(0)
                     imgui.Text(data.status)
@@ -543,46 +543,46 @@ function ui.drawAuctionHouseTab()
 end
 
 function ui.drawSettingsTab()
-    if imgui.Checkbox("Enable transaction confirmation popup", auctioneer.config.confirmationPopup) then
+    if imgui.Checkbox('Enable transaction confirmation popup', auctioneer.config.confirmationPopup) then
         settings.save()
     end
 
-    if imgui.Checkbox("Display item preview", auctioneer.config.itemPreview) then
+    if imgui.Checkbox('Display item preview', auctioneer.config.itemPreview) then
         settings.save()
     end
 
-    if imgui.Checkbox("Display price history", auctioneer.config.priceHistory) then
+    if imgui.Checkbox('Display price history', auctioneer.config.priceHistory) then
         settings.save()
     end
 
-    if imgui.Checkbox("Display auction house tab", auctioneer.config.auctionHouse) then
+    if imgui.Checkbox('Display auction house tab', auctioneer.config.auctionHouse) then
         settings.save()
     end
 
-    if imgui.Checkbox("Remove next buy tasks from queue if a task fails", auctioneer.config.removeFailedBuyTasks) then
+    if imgui.Checkbox('Remove next buy tasks from queue if a task fails', auctioneer.config.removeFailedBuyTasks) then
         settings.save()
     end
 
-    if imgui.Checkbox("Enable search filters", auctioneer.config.searchFilters) then
+    if imgui.Checkbox('Enable search filters', auctioneer.config.searchFilters) then
         settings.save()
     end
 end
 
 function ui.drawUI()
     imgui.SetNextWindowSizeConstraints(minSize, { FLT_MAX, FLT_MAX })
-    if imgui.Begin("Auctioneer", auctioneer.visible) then
-        if imgui.BeginTabBar("##TabBar") then
-            if imgui.BeginTabItem("Buy & Sell") then
+    if imgui.Begin('Auctioneer', auctioneer.visible) then
+        if imgui.BeginTabBar('##TabBar') then
+            if imgui.BeginTabItem('Buy & Sell') then
                 ui.drawBuySellTab()
                 imgui.EndTabItem()
             end
 
-            if auctioneer.config.auctionHouse[1] and imgui.BeginTabItem("Auction House") then
+            if auctioneer.config.auctionHouse[1] and imgui.BeginTabItem('Auction House') then
                 ui.drawAuctionHouseTab()
                 imgui.EndTabItem()
             end
 
-            if imgui.BeginTabItem("Settings") then
+            if imgui.BeginTabItem('Settings') then
                 ui.drawSettingsTab()
                 imgui.EndTabItem()
             end
