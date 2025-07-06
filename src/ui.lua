@@ -49,7 +49,6 @@ function ui.update()
     end
 
     if auctioneer.search.selectedItem ~= auctioneer.search.previousSelectedItem then
-        ffxiah.reset(false)
         auctioneer.search.previousSelectedItem = auctioneer.search.selectedItem
     end
 
@@ -239,7 +238,7 @@ function ui.drawSearch()
                     local item = auctioneer.search.results[i + 1]
                     local itemLabel = items[item].shortName
                     local isSelected = (auctioneer.search.selectedItem == item)
-                    if imgui.Selectable(itemLabel, isSelected) and not auctioneer.priceHistory.fetching then
+                    if imgui.Selectable(itemLabel, isSelected) then
                         auctioneer.search.selectedItem = item
                     end
                 end
@@ -331,9 +330,7 @@ function ui.drawBuySellCommands()
     imgui.SetNextItemWidth(-1)
     imgui.InputText('##PriceInput', priceInput, 48)
 
-    if imgui.Checkbox('Stack', stack) then
-        ffxiah.reset(false)
-    end
+    imgui.Checkbox('Stack', stack)
     imgui.SameLine()
 
     if imgui.Button('Buy') then
@@ -411,7 +408,73 @@ function ui.drawBuySellCommands()
     imgui.Text(gilText)
 end
 
-function ui.drawPriceHistory()
+function ui.drawPriceHistory(sales, stock, rate, salesPerDay, median)
+    imgui.Text('Price history')
+
+    imgui.Text('Stock: ')
+    imgui.SameLine(0, 0)
+    imgui.TextColored(utils.hexToImVec4(utils.getStockColor(stock)), stock)
+    imgui.Text(string.format('Rate: '))
+    imgui.SameLine(0, 0)
+    imgui.TextColored(utils.hexToImVec4(utils.getSalesRatingColor(rate)), utils.getSalesRatingLabel(rate))
+    imgui.SameLine(0, 0)
+    imgui.Text(string.format(' (%s sold /day)', salesPerDay))
+    imgui.Text(string.format('Median: %s', utils.commaValue(median)))
+
+    if imgui.BeginTable('##PriceHistoryTable', 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
+        imgui.TableSetupColumn('Date')
+        imgui.TableSetupColumn('Seller')
+        imgui.TableSetupColumn('Buyer')
+        imgui.TableSetupColumn('Price')
+        imgui.TableHeadersRow()
+
+        for i, sale in ipairs(sales) do
+            imgui.TableNextRow()
+            imgui.TableSetColumnIndex(0)
+            imgui.Text(sale.date)
+            imgui.TableSetColumnIndex(1)
+            imgui.Text(sale.seller)
+            imgui.TableSetColumnIndex(2)
+            imgui.Text(sale.buyer)
+            imgui.TableSetColumnIndex(3)
+            local priceStr = tostring(sale.price)
+            if imgui.Selectable(utils.commaValue(sale.price) .. '##' .. i) then
+                priceInput[1] = priceStr
+            end
+        end
+        imgui.EndTable()
+    end
+end
+
+function ui.drawBazaar(bazaar)
+    imgui.Text('Bazaar')
+
+    if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
+        imgui.TableSetupColumn('Player')
+        imgui.TableSetupColumn('Price')
+        imgui.TableSetupColumn('Quantity')
+        imgui.TableSetupColumn('Zone')
+        imgui.TableSetupColumn('Last seen')
+        imgui.TableHeadersRow()
+
+        for i, bzr in ipairs(bazaar) do
+            imgui.TableNextRow()
+            imgui.TableSetColumnIndex(0)
+            imgui.Text(string.format('%s.%s', bzr.server, bzr.player))
+            imgui.TableSetColumnIndex(1)
+            imgui.Text(tostring(bzr.price))
+            imgui.TableSetColumnIndex(2)
+            imgui.Text(tostring(bzr.quantity))
+            imgui.TableSetColumnIndex(3)
+            imgui.Text(bzr.zone)
+            imgui.TableSetColumnIndex(4)
+            imgui.Text(utils.relativeTime(bzr.time))
+        end
+        imgui.EndTable()
+    end
+end
+
+function ui.drawFFXIAH()
     local availX, availY = imgui.GetContentRegionAvail()
 
     imgui.NewLine()
@@ -424,107 +487,30 @@ function ui.drawPriceHistory()
     imgui.SameLine()
     imgui.SetNextItemWidth(150)
 
-    local currentServerName = 'Unknown'
-    for _, server in ipairs(servers) do
-        if server.id == auctioneer.config.server[1] then
-            currentServerName = server.name
-            break
-        end
-    end
+    local currentServerName = servers[auctioneer.config.server[1]] or 'Unknown'
 
     if imgui.BeginCombo('##ServerSelectCombo', currentServerName) then
-        for _, server in ipairs(servers) do
-            local isSelected = auctioneer.config.server[1] == server.id
-            if imgui.Selectable(server.name, isSelected) and auctioneer.config.server[1] ~= server.id then
-                ffxiah.reset(false)
-                auctioneer.config.server[1] = server.id
+        for id, server in pairs(servers) do
+            local isSelected = auctioneer.config.server[1] == id
+            if imgui.Selectable(server, isSelected) and auctioneer.config.server[1] ~= id then
+                auctioneer.config.server[1] = id
                 settings.save()
             end
         end
         imgui.EndCombo()
     end
 
-    if auctioneer.priceHistory.fetching == false then
+    if auctioneer.ffxiah.fetching == false then
         if imgui.Button('Fetch prices & bazaar') then
             if auctioneer.search.selectedItem == nil then
                 print(chat.header(addon.name):append(chat.error('Please select an item')))
             else
-                ffxiah.reset(true)
+                auctioneer.ffxiah.fetching = true
                 ffxiah.fetch(auctioneer.search.selectedItem, stack[1])
             end
         end
     else
-        if auctioneer.priceHistory.sales == nil and auctioneer.priceHistory.bazaar == nil then
-            imgui.Text('Fetching...')
-        else
-            if auctioneer.priceHistory.sales ~= nil then
-                imgui.Text('Price history')
-
-                imgui.Text('Stock: ')
-                imgui.SameLine(0, 0)
-                imgui.TextColored(utils.hexToImVec4(utils.getStockColor(auctioneer.priceHistory.stock)),
-                    auctioneer.priceHistory.stock)
-                imgui.Text(string.format('Rate: '))
-                imgui.SameLine(0, 0)
-                imgui.TextColored(utils.hexToImVec4(utils.getSalesRatingColor(auctioneer.priceHistory.rate)),
-                    utils.getSalesRatingLabel(auctioneer.priceHistory.rate))
-                imgui.SameLine(0, 0)
-                imgui.Text(string.format(' (%s sold /day)', auctioneer.priceHistory.salesPerDay))
-                imgui.Text(string.format('Median: %s', utils.commaValue(auctioneer.priceHistory.median)))
-
-                if imgui.BeginTable('##PriceHistoryTable', 4, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
-                    imgui.TableSetupColumn('Date')
-                    imgui.TableSetupColumn('Seller')
-                    imgui.TableSetupColumn('Buyer')
-                    imgui.TableSetupColumn('Price')
-                    imgui.TableHeadersRow()
-
-                    for i, sale in ipairs(auctioneer.priceHistory.sales) do
-                        imgui.TableNextRow()
-                        imgui.TableSetColumnIndex(0)
-                        imgui.Text(sale.date)
-                        imgui.TableSetColumnIndex(1)
-                        imgui.Text(sale.seller)
-                        imgui.TableSetColumnIndex(2)
-                        imgui.Text(sale.buyer)
-                        imgui.TableSetColumnIndex(3)
-                        local priceStr = tostring(sale.price)
-                        if imgui.Selectable(utils.commaValue(sale.price) .. '##' .. i) then
-                            priceInput[1] = priceStr
-                        end
-                    end
-                    imgui.EndTable()
-                end
-            end
-
-            if auctioneer.priceHistory.bazaar ~= nil then
-                imgui.Text('Bazaar')
-
-                if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
-                    imgui.TableSetupColumn('Player')
-                    imgui.TableSetupColumn('Price')
-                    imgui.TableSetupColumn('Quantity')
-                    imgui.TableSetupColumn('Zone')
-                    imgui.TableSetupColumn('Last seen')
-                    imgui.TableHeadersRow()
-
-                    for i, bazaar in ipairs(auctioneer.priceHistory.bazaar) do
-                        imgui.TableNextRow()
-                        imgui.TableSetColumnIndex(0)
-                        imgui.Text(string.format('%s.%s', bazaar.server, bazaar.player))
-                        imgui.TableSetColumnIndex(1)
-                        imgui.Text(tostring(bazaar.price))
-                        imgui.TableSetColumnIndex(2)
-                        imgui.Text(tostring(bazaar.quantity))
-                        imgui.TableSetColumnIndex(3)
-                        imgui.Text(bazaar.zone)
-                        imgui.TableSetColumnIndex(4)
-                        imgui.Text(utils.relativeTime(bazaar.time))
-                    end
-                    imgui.EndTable()
-                end
-            end
-        end
+        imgui.Text('Fetching...')
     end
 end
 
@@ -540,8 +526,8 @@ function ui.drawBuySellTab()
         ui.drawItemPreview()
     end
     ui.drawBuySellCommands()
-    if auctioneer.config.priceHistory[1] then
-        ui.drawPriceHistory()
+    if auctioneer.config.ffxiah[1] then
+        ui.drawFFXIAH()
     end
 end
 
@@ -605,7 +591,7 @@ function ui.drawSettingsTab()
         settings.save()
     end
 
-    if imgui.Checkbox('Display price history', auctioneer.config.priceHistory) then
+    if imgui.Checkbox('Display price history', auctioneer.config.ffxiah) then
         settings.save()
     end
 
@@ -644,6 +630,50 @@ function ui.drawUI()
         end
         ui.drawConfirmationModal()
         imgui.End()
+    end
+
+    local removeIndices = {}
+
+    for id, window in ipairs(auctioneer.ffxiah.windows) do
+        local open = { true }
+        data = {
+            windowId = window.windowId,
+            itemId = window.itemId,
+            stack = window.stack,
+            server = window.server,
+            fetchedOn = window.fetchedOn,
+            sales = window.sales,
+            stock = window.stock,
+            rate = window.rate,
+            salesPerDay = window.salesPerDay,
+            median = window.median,
+            bazaar = window.bazaar
+        }
+
+        if imgui.Begin(string.format('FFXIAH Data for %s##%s', items[data.itemId].shortName, data.windowId), open) then
+            imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, data.stack and 'Stack' or 'Single'))
+            imgui.Text(string.format('Server: %s', servers[data.server]))
+            imgui.Text(string.format('Fetched on: %s', os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)))
+            imgui.Separator()
+            if data.sales ~= nil then
+                ui.drawPriceHistory(data.sales, data.stock, data.rate, data.salesPerDay, data.median)
+                if data.bazaar ~= nil then
+                    imgui.Separator()
+                end
+            end
+            if data.bazaar ~= nil then
+                ui.drawBazaar(data.bazaar)
+            end
+        end
+        imgui.End()
+
+        if not open[1] then
+            table.insert(removeIndices, id)
+        end
+    end
+
+    for i = #removeIndices, 1, -1 do
+        table.remove(auctioneer.ffxiah.windows, removeIndices[i])
     end
 end
 

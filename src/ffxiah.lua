@@ -6,7 +6,7 @@ local function getBaseUrl(url)
     return url:match('^(https?://[^/]+)')
 end
 
-local function fetchUrl(url)
+local function fetchUrl(url, server)
     local maxRedirects = 5
     local redirects = 0
 
@@ -15,7 +15,7 @@ local function fetchUrl(url)
         local _, statusCode, headers = http.request {
             url = url,
             headers = {
-                ['Cookie'] = 'sid=' .. tostring(auctioneer.config.server[1])
+                ['Cookie'] = 'sid=' .. tostring(server)
             },
             sink = ltn12.sink.table(response_body)
         }
@@ -75,6 +75,7 @@ end
 function ffxiah.fetch(id, stack)
     local stackParam = stack and '1' or '0'
     local url = 'https://www.ffxiah.com/item/' .. tostring(id) .. '?stack=' .. stackParam
+    local server = auctioneer.config.server[1]
 
     if auctioneer.worker ~= nil then
         print(chat.header(addon.name):append(chat.warning('Still fetching FFXIAH data, please wait...')))
@@ -83,10 +84,19 @@ function ffxiah.fetch(id, stack)
 
     auctioneer.worker = thread.start(function ()
         auctioneer.workerResult = {
-            priceHistory = {}
+            itemId = id,
+            stack = stack,
+            server = server,
+            sales = nil,
+            stock = nil,
+            rate = nil,
+            salesPerDay = nil,
+            median = nil,
+            bazaar = nil,
+            fetching = false
         }
 
-        local response = fetchUrl(url)
+        local response = fetchUrl(url, server)
         if not response then
             return
         end
@@ -108,7 +118,6 @@ function ffxiah.fetch(id, stack)
             end)
 
             if err then
-                auctioneer.priceHistory.fetching = false
                 return
             end
 
@@ -117,11 +126,11 @@ function ffxiah.fetch(id, stack)
             local median = response:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
 
             if sales ~= nil and #sales > 0 then
-                auctioneer.workerResult.priceHistory.sales = sales
-                auctioneer.workerResult.priceHistory.stock = stock
-                auctioneer.workerResult.priceHistory.rate = rate
-                auctioneer.workerResult.priceHistory.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
-                auctioneer.workerResult.priceHistory.median = median
+                auctioneer.workerResult.sales = sales
+                auctioneer.workerResult.stock = stock
+                auctioneer.workerResult.rate = rate
+                auctioneer.workerResult.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
+                auctioneer.workerResult.median = median
             end
 
             local bazaar, err2 = handleJsonField(response, 'bazaar', id, function (bazaarTable)
@@ -151,15 +160,8 @@ function ffxiah.fetch(id, stack)
             end
 
             if #bazaar > 0 then
-                auctioneer.workerResult.priceHistory.bazaar = bazaar
+                auctioneer.workerResult.bazaar = bazaar
             end
-
-            if auctioneer.workerResult.priceHistory.sales == nil and auctioneer.workerResult.priceHistory.bazaar == nil then
-                auctioneer.workerResult.priceHistory.fetching = false
-            end
-        else
-            auctioneer.workerResult.priceHistory.fetching = false
-            return
         end
     end)
 end
@@ -168,29 +170,33 @@ function ffxiah.pollWorker()
     if auctioneer.worker ~= nil then
         local result = auctioneer.worker:wait(0)
         if result == 0 then
-            auctioneer.priceHistory.sales = auctioneer.workerResult.priceHistory.sales or nil
-            auctioneer.priceHistory.stock = auctioneer.workerResult.priceHistory.stock or nil
-            auctioneer.priceHistory.rate = auctioneer.workerResult.priceHistory.rate or nil
-            auctioneer.priceHistory.salesPerDay = auctioneer.workerResult.priceHistory.salesPerDay or nil
-            auctioneer.priceHistory.median = auctioneer.workerResult.priceHistory.median or nil
-            auctioneer.priceHistory.bazaar = auctioneer.workerResult.priceHistory.bazaar or nil
-            auctioneer.priceHistory.fetching = auctioneer.workerResult.priceHistory.fetching
+            local data = auctioneer.workerResult
 
             auctioneer.worker:close()
             auctioneer.worker = nil
             auctioneer.workerResult = nil
+
+            if data then
+                local windowId = string.format('%i%i', data.itemId, os.time())
+                if not auctioneer.ffxiah.windows[windowId] then
+                    table.insert(auctioneer.ffxiah.windows, {
+                        windowId = windowId,
+                        itemId = data.itemId,
+                        stack = data.stack,
+                        server = data.server,
+                        fetchedOn = os.time(),
+                        sales = data.sales,
+                        stock = data.stock,
+                        rate = data.rate,
+                        salesPerDay = data.salesPerDay,
+                        median = data.median,
+                        bazaar = data.bazaar
+                    })
+                end
+            end
+            auctioneer.ffxiah.fetching = false
         end
     end
-end
-
-function ffxiah.reset(fetching)
-    auctioneer.priceHistory.sales = nil
-    auctioneer.priceHistory.stock = nil
-    auctioneer.priceHistory.rate = nil
-    auctioneer.priceHistory.salesPerDay = nil
-    auctioneer.priceHistory.median = nil
-    auctioneer.priceHistory.bazaar = nil
-    auctioneer.priceHistory.fetching = fetching
 end
 
 return ffxiah

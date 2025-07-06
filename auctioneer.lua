@@ -46,14 +46,9 @@ auctioneer = {
     visible = { false },
     AuctionHouse = nil,
     auctionHouseInitialized = false,
-    priceHistory = {
-        sales = nil,
-        stock = nil,
-        rate = nil,
-        salesPerDay = nil,
-        median = nil,
-        bazaar = nil,
+    ffxiah = {
         fetching = false,
+        windows = {}
     },
     search = {
         input = { '' },
@@ -75,7 +70,7 @@ auctioneer = {
     lastUpdateTime = os.clock(),
     worker = nil,
     workerResult = nil,
-    zoning = false
+    zoning = false,
 }
 
 ashita.events.register('load', 'load_cb', function ()
