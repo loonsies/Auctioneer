@@ -11,6 +11,8 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 
 ---
 
+![image](https://github.com/user-attachments/assets/4e095cef-a951-42d5-a7e7-884fd248147d)
+
 ## Features
 - **Command-based Bidding and Selling**  
   Perform AH transactions quickly using simple commands.
