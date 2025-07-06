@@ -303,6 +303,30 @@ function ui.drawItemPreview()
     end
 end
 
+function ui.drawUtils()
+    if imgui.Button('Open wiki') then
+        if auctioneer.search.selectedItem == nil then
+            print(chat.header(addon.name):append(chat.error('Please select an item')))
+        else
+            local shortName = (items[auctioneer.search.selectedItem].shortName)
+            shortName = string.gsub(shortName, ' ', '_')
+            local cmd = string.format('start "" "https://bg-wiki.com/ffxi/%s"', shortName)
+
+            os.execute(cmd)
+        end
+    end
+    imgui.SameLine()
+
+    if imgui.Button('Open FFXIAH') then
+        if auctioneer.search.selectedItem == nil then
+            print(chat.header(addon.name):append(chat.error('Please select an item')))
+        else
+            local cmd = string.format('start "" "https://www.ffxiah.com/item/%i?stack=%i"', auctioneer.search.selectedItem, stack[1] and 1 or 0)
+            os.execute(cmd)
+        end
+    end
+end
+
 function ui.drawBuySellCommands()
     local iconSize = 20
 
@@ -477,7 +501,6 @@ end
 function ui.drawFFXIAH()
     local availX, availY = imgui.GetContentRegionAvail()
 
-    imgui.NewLine()
     imgui.Text('FFXIAH')
     imgui.SameLine()
     imgui.Dummy({ 25, 0 })
@@ -526,7 +549,10 @@ function ui.drawBuySellTab()
         ui.drawItemPreview()
     end
     ui.drawBuySellCommands()
+    imgui.Dummy({ 0, 0 })
+    ui.drawUtils()
     if auctioneer.config.ffxiah[1] then
+        imgui.Separator()
         ui.drawFFXIAH()
     end
 end
