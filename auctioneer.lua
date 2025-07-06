@@ -75,7 +75,7 @@ auctioneer = {
     lastUpdateTime = os.clock(),
     worker = nil,
     workerResult = nil,
-    zoning = true
+    zoning = false
 }
 
 ashita.events.register('load', 'load_cb', function ()

@@ -74,7 +74,6 @@ function packets.handleIncomingPacket(e)
             auctioneer.zoning = true
         end
     end
-    return false
 end
 
 return packets
