@@ -68,8 +68,8 @@ function packets.handleIncomingPacket(e)
             auctioneer.zoning = false
         end
     elseif e.id == 0x000B then
+        task.clear()
         if auctioneer.visible[1] then
-            task.clear()
             auctioneer.visible[1] = false
             auctioneer.zoning = true
         end
