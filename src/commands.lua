@@ -3,11 +3,11 @@ commands = {}
 function commands.handleBuySell(args, command)
     if #args < 4 then
         print(chat.header(addon.name):append(chat.error(
-            "Invalid arguments. Usage: /[buy|sell] itemName [single,0|stack,1] price")))
+            'Invalid arguments. Usage: /[buy|sell] itemName [single,0|stack,1] price')))
         return false
     end
-    local action = command == "/buy" and auctionHouseActions.buy or auctionHouseActions.sell
-    local itemName = table.concat(args, " ", 2, #args - 2)
+    local action = command == '/buy' and auctionHouseActions.buy or auctionHouseActions.sell
+    local itemName = table.concat(args, ' ', 2, #args - 2)
     local single = args[#args - 1]
     local price = args[#args]
 
@@ -15,14 +15,14 @@ function commands.handleBuySell(args, command)
 end
 
 function commands.handleOpenOutbox()
-    local obox = struct.pack("bbxxbbbbbbbbbbbbbbbb", 0x4B, 0x0A, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    local obox = struct.pack('bbxxbbbbbbbbbbbbbbbb', 0x4B, 0x0A, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF):totable()
     AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, obox)
     return true
 end
 
 function commands.handleOpenInbox()
-    local ibox = struct.pack("bbxxbbbbbbbbbbbbbbbb", 0x4B, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    local ibox = struct.pack('bbxxbbbbbbbbbbbbbbbb', 0x4B, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF):totable()
     AshitaCore:GetPacketManager():AddIncomingPacket(0x4B, ibox)
     return true
@@ -52,49 +52,49 @@ end
 
 function commands.handleOpenMenu()
     AshitaCore:GetPacketManager():AddIncomingPacket(0x4C,
-        struct.pack("bbbbbbbi32i21", 0x4C, 0x1E, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00):totable())
+        struct.pack('bbbbbbbi32i21', 0x4C, 0x1E, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00):totable())
     return true
 end
 
 function commands.handleCommand(args)
     local command = string.lower(args[1])
-    local zone = AshitaCore:GetResourceManager():GetString("zones.names", AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0))
+    local zone = AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0))
     local isInZone = table.hasvalue(zones, zone)
 
-    if command ~= "/ah" and command ~= "/buy" and command ~= "/sell" and command ~= "/inbox" and command ~= "/outbox" and
-        command ~= "/ibox" and command ~= "/obox" then
+    if command ~= '/auctioneer' and command ~= '/ah' and command ~= '/buy' and command ~= '/sell' and command ~= '/inbox' and command ~= '/outbox' and
+        command ~= '/ibox' and command ~= '/obox' then
         return false
     end
 
-    if command == "/sell" or command == "/buy" or command == "/outbox" or command == "/obox" or command == "/inbox" or command == "/ibox" then
+    if command == '/sell' or command == '/buy' or command == '/outbox' or command == '/obox' or command == '/inbox' or command == '/ibox' then
         if not isInZone then
             print(chat.header(addon.name):append(chat.error(
-                "You are not in an area that contains an auction house. Aborting")))
+                'You are not in an area that contains an auction house. Aborting')))
             return false
         end
 
-        if command == "/sell" or command == "/buy" then
+        if command == '/sell' or command == '/buy' then
             return commands.handleBuySell(args, command)
-        elseif command == "/outbox" or command == "/obox" then
+        elseif command == '/outbox' or command == '/obox' then
             return commands.handleOpenOutbox()
-        elseif command == "/inbox" or command == "/ibox" then
+        elseif command == '/inbox' or command == '/ibox' then
             return commands.handleOpenInbox()
         end
     end
 
-    if command == "/ah" then
+    if command == '/auctioneer' or command == '/ah' then
         if #args == 1 then
             return commands.handleToggleUi()
         elseif #args == 2 then
             local arg = string.lower(args[2])
 
-            if arg == "show" then
+            if arg == 'show' then
                 return commands.handleShowUi()
-            elseif arg == "hide" then
+            elseif arg == 'hide' then
                 return commands.handleHideUi()
-            elseif arg == "clear" then
+            elseif arg == 'clear' then
                 return commands.handleClearSales()
-            elseif arg == "menu" then
+            elseif arg == 'menu' then
                 return commands.handleOpenMenu()
             end
         end

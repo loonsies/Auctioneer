@@ -1,12 +1,12 @@
 salesRating = {}
 
 salesRating.labels = {
-    "Dead Slow",
-    "Very Slow",
-    "Slow",
-    "Average",
-    "Fast",
-    "Very Fast"
+    'Dead Slow',
+    'Very Slow',
+    'Slow',
+    'Average',
+    'Fast',
+    'Very Fast'
 }
 
 salesRating.thresholds = {
@@ -19,12 +19,12 @@ salesRating.thresholds = {
 }
 
 salesRating.colors = {
-    "888888",
-    "D20000",
-    "FEAD3F",
-    "BBBB00",
-    "33CC33",
-    "339900"
+    '888888',
+    'D20000',
+    'FEAD3F',
+    'BBBB00',
+    '33CC33',
+    '339900'
 }
 
 return salesRating

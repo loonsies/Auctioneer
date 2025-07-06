@@ -15,14 +15,14 @@ function itemUtils.load()
             local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
             local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)
 
-            if (isBazaarable or isAuctionable) and item.Name[1] ~= "." then -- Get rid of all the empty items
+            if (isBazaarable or isAuctionable) and item.Name[1] ~= '.' then -- Get rid of all the empty items
                 if not items[id] then
                     items[id] = {}
                 end
 
-                items[id].shortName = item.Name[1] or ""
-                items[id].longName = item.LogNameSingular[1] or ""
-                items[id].description = item.Description[1] or ""
+                items[id].shortName = item.Name[1] or ''
+                items[id].longName = item.LogNameSingular[1] or ''
+                items[id].description = item.Description[1] or ''
                 items[id].category = category
                 items[id].level = item.Level
                 items[id].jobs = item.Jobs
