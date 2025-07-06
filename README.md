@@ -13,7 +13,7 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/4e095cef-a951-42d5-a7e7-884fd248147d" alt="Image 1" width="300px" style="max-width: 100%;"/>
-  <img src="https://github.com/user-attachments/assets/13609034-af4a-4b78-99b5-f1286c78a6da" alt="Image 2" width="600px" style="max-width: 100%;"/>
+  <img src="https://github.com/user-attachments/assets/13609034-af4a-4b78-99b5-f1286c78a6da" alt="Image 2" width="400" style="max-width: 100%;"/>
 </p>
 
 ## Features
