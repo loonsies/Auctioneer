@@ -1,6 +1,6 @@
 local ui = {}
 
-local minSize = { 400, 400 }
+local minSize = { 550, 400 }
 local quantityInput = { 1 }
 local priceInput = { '' }
 local stack = { false }
@@ -13,6 +13,16 @@ preview.itemBackground = nil
 local modal = {
     visible = false
 }
+
+function ui.updateETA()
+    local now = os.clock()
+    local deltaTime = now - auctioneer.lastUpdateTime
+    auctioneer.lastUpdateTime = now
+
+    if auctioneer.eta > 0 then
+        auctioneer.eta = math.max(0, auctioneer.eta - deltaTime)
+    end
+end
 
 function ui.update()
     if not auctioneer.visible[1] then
@@ -47,11 +57,52 @@ function ui.update()
 end
 
 function ui.drawGlobalCommands()
-    if imgui.Button('Open AH') then
+    local queueSize = task.getQueueSize()
+    local queueText = 'No tasks queued'
+
+    if queueSize > 0 then
+        local mins = math.floor(auctioneer.eta / 60)
+        local secs = math.floor(auctioneer.eta % 60)
+        queueText = string.format('%d tasks queued - est. %d:%02d', queueSize, mins, secs)
+    end
+
+    imgui.Text(queueText)
+
+    local function getButtonWidth(label, maxWidth)
+        local textSize = imgui.CalcTextSize(label)
+        local padding = 20
+        local minWidth = textSize + padding
+        if minWidth > maxWidth then
+            return maxWidth
+        else
+            return minWidth
+        end
+    end
+
+    local availX, _ = imgui.GetContentRegionAvail()
+
+    local maxButtonWidth = availX / 3
+    local stopWidth = getButtonWidth('Stop', maxButtonWidth)
+    local openAHWidth = getButtonWidth('Open AH', maxButtonWidth)
+    local clearSalesWidth = getButtonWidth('Clear Sales', maxButtonWidth)
+
+    local buttonsWidth = stopWidth + openAHWidth + clearSalesWidth + (imgui.GetStyle().ItemSpacing.x * 2)
+
+    imgui.SameLine()
+    local cursorPosX = imgui.GetCursorPosX()
+    local contentRegionX = imgui.GetContentRegionAvail() -- after Text()
+
+    imgui.SetCursorPosX(cursorPosX + contentRegionX - buttonsWidth)
+
+    if imgui.Button('Stop', { stopWidth, 0 }) then
+        task.clear()
+    end
+    imgui.SameLine()
+    if imgui.Button('Open AH', { openAHWidth, 0 }) then
         commands.handleCommand({ '/ah', 'menu' })
     end
     imgui.SameLine()
-    if imgui.Button('Clear Sales') then
+    if imgui.Button('Clear Sales', { clearSalesWidth, 0 }) then
         commands.handleCommand({ '/ah', 'clear' })
     end
 end
@@ -290,7 +341,7 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
-        elseif auctioneer.AuctionHouse == nil then
+        elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
             if auctioneer.config.confirmationPopup[1] then
@@ -319,7 +370,7 @@ function ui.drawBuySellCommands()
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.search.selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
-        elseif auctioneer.AuctionHouse == nil then
+        elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
             if auctioneer.config.confirmationPopup[1] then
@@ -479,8 +530,10 @@ end
 
 function ui.drawBuySellTab()
     ui.drawGlobalCommands()
+    imgui.Separator()
     if auctioneer.config.searchFilters[1] then
         ui.drawFilters()
+        imgui.Dummy({ 0, 0 })
     end
     ui.drawSearch()
     if auctioneer.config.itemPreview[1] then
@@ -494,6 +547,7 @@ end
 
 function ui.drawAuctionHouseTab()
     ui.drawGlobalCommands()
+    imgui.Separator()
     if auctioneer.auctionHouseInitialized == false then
         imgui.Text('Auction House not initialized.')
         imgui.Text('Interact with it to initialize this tab.')
@@ -508,17 +562,17 @@ function ui.drawAuctionHouseTab()
 
             for x = 0, 6 do
                 data = {}
-                data.status = auctioneer.AuctionHouse[x].status
+                data.status = auctioneer.auctionHouse[x].status
                 if data.status ~= 'Expired' and data.status ~= 'Empty' then
-                    data.timer = auctioneer.AuctionHouse[x].status == 'On auction' and
-                        auctioneer.AuctionHouse[x].timestamp + 829440 or auctioneer.AuctionHouse[x].timestamp
+                    data.timer = auctioneer.auctionHouse[x].status == 'On auction' and
+                        auctioneer.auctionHouse[x].timestamp + 829440 or auctioneer.auctionHouse[x].timestamp
                     data.expiresIn = string.format('%s',
-                        (auctioneer.AuctionHouse[x].status == 'On auction' and os.time() - data.timer > 0) and 'Expired' or
+                        (auctioneer.auctionHouse[x].status == 'On auction' and os.time() - data.timer > 0) and 'Expired' or
                         utils.timef(math.abs(os.time() - data.timer)))
                     data.date = os.date('%c', data.timer)
-                    data.count = tostring(auctioneer.AuctionHouse[x].count)
-                    data.item = auctioneer.AuctionHouse[x].item .. ' (' .. data.count .. ')'
-                    data.price = utils.commaValue(auctioneer.AuctionHouse[x].price)
+                    data.count = tostring(auctioneer.auctionHouse[x].count)
+                    data.item = auctioneer.auctionHouse[x].item .. ' (' .. data.count .. ')'
+                    data.price = utils.commaValue(auctioneer.auctionHouse[x].price)
                     imgui.TableNextRow()
 
                     imgui.TableSetColumnIndex(0)

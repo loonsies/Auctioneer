@@ -1,8 +1,8 @@
 local utils = {}
 
 function utils.commaValue(n)
-    local left, num, right = string.match(n, "^([^%d]*%d)(%d*)(.-)$")
-    return left .. (num:reverse():gsub("(%d%d%d)", "%1,"):reverse()) .. right
+    local left, num, right = string.match(n, '^([^%d]*%d)(%d*)(.-)$')
+    return left .. (num:reverse():gsub('(%d%d%d)', '%1,'):reverse()) .. right
 end
 
 function utils.getCurrentGils()
@@ -41,7 +41,7 @@ function utils.getItemById(id)
 end
 
 function utils.timef(ts)
-    return string.format("%d days %.2d:%.2d:%.2d", ts / (60 * 60 * 24), ts / (60 * 60) % 24, ts / 60 % 60, ts % 60)
+    return string.format('%d days %.2d:%.2d:%.2d', ts / (60 * 60 * 24), ts / (60 * 60) % 24, ts / 60 % 60, ts % 60)
 end
 
 function utils.escapeString(str)
@@ -157,18 +157,18 @@ function utils.relativeTime(epoch)
     local diff = os.time() - epoch
 
     if diff < 60 then
-        return "just now"
+        return 'just now'
     elseif diff < 3600 then
         local minutes = math.floor(diff / 60)
-        return minutes == 1 and "a minute ago" or (minutes .. " minutes ago")
+        return minutes == 1 and 'a minute ago' or (minutes .. ' minutes ago')
     elseif diff < 86400 then
         local hours = math.floor(diff / 3600)
-        return hours == 1 and "about an hour ago" or (hours .. " hours ago")
+        return hours == 1 and 'about an hour ago' or (hours .. ' hours ago')
     elseif diff < 172800 then
-        return "yesterday"
+        return 'yesterday'
     else
         local days = math.floor(diff / 86400)
-        return days == 1 and "1 day ago" or (days .. " days ago")
+        return days == 1 and '1 day ago' or (days .. ' days ago')
     end
 end
 
@@ -209,14 +209,14 @@ function utils.calcSalesRate(now, oldestSaleTimestamp, numSales)
     end
     local timeDiff = now - oldestSaleTimestamp
     local salesPerDay = numSales * 86400 / timeDiff
-    return string.format("%.3f", salesPerDay)
+    return string.format('%.3f', salesPerDay)
 end
 
 function utils.hexToImVec4(hex)
-    hex = hex:gsub("#", "")
-    local r = tonumber("0x" .. hex:sub(1, 2)) / 255
-    local g = tonumber("0x" .. hex:sub(3, 4)) / 255
-    local b = tonumber("0x" .. hex:sub(5, 6)) / 255
+    hex = hex:gsub('#', '')
+    local r = tonumber('0x' .. hex:sub(1, 2)) / 255
+    local g = tonumber('0x' .. hex:sub(3, 4)) / 255
+    local b = tonumber('0x' .. hex:sub(5, 6)) / 255
     return { r, g, b, 1.0 }
 end
 

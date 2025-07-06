@@ -4,8 +4,6 @@ local throttle_timer = 0
 local throttle_interval = 8
 
 local function handleEntry(entry)
-    --Could do validation on whether player has stepped away from AH or zoned here if desired, or check other things like that
-
     if entry.type == taskTypes.buy then
         if auctionHouse.buy(entry.item, entry.single, entry.price) then
             throttle_timer = os.clock() + throttle_interval
@@ -23,7 +21,7 @@ local function handleEntry(entry)
             throttle_timer = os.clock() + throttle_interval
         end
     else
-        print(chat.header(addon.name):append(chat.error("Invalid task type")))
+        print(chat.header(addon.name):append(chat.error('Invalid task type')))
     end
 end
 
@@ -35,12 +33,18 @@ local function handleQueue()
 end
 
 function task.clear()
+    if #queue > 0 then
+        print(chat.header(addon.name):append(chat.warning(string.format('Removed %i tasks from queue', #queue))))
+    end
+
     queue = {}
+    auctioneer.eta = 0
 end
 
 function task.preempt(entry)
-    local action = #queue > 0 and "prioritized" or "throttled"
+    local action = #queue > 0 and 'prioritized' or 'throttled'
     throttle_timer = os.clock() + throttle_interval
+    auctioneer.eta = (auctioneer.eta or 0) + throttle_interval
     table.insert(queue, 1, entry)
     print(chat.header(addon.name):append(chat.warning(
         string.format('%s task %s, will run after %.2f seconds',
@@ -49,16 +53,17 @@ function task.preempt(entry)
 end
 
 function task.enqueue(entry)
-    local queueCount = #queue
-    if queueCount == 0 and os.clock() > throttle_timer then
+    local queueSize = #queue
+    if queueSize == 0 and os.clock() > throttle_timer then
         handleEntry(entry)
     else
-        queue[queueCount + 1] = entry
-        local delay = (throttle_interval * queueCount) + (throttle_timer - os.clock())
+        auctioneer.eta = (auctioneer.eta or 0) + throttle_interval
+        queue[queueSize + 1] = entry
+        local delay = (throttle_interval * queueSize) + (throttle_timer - os.clock())
         print(chat.header(addon.name):append(chat.warning(
             string.format('%s task throttled, will run in %.2f seconds (queue position %d)', taskTypes[entry.type],
                 delay,
-                queueCount + 1)
+                queueSize + 1)
         )))
     end
 end
@@ -73,19 +78,24 @@ function task.filter(entry)
             table.remove(queue, i)
             print(chat.header(addon.name):append(chat.warning(string.format('Task removed: %s "%s" %s %s ID:%s',
                 taskTypes[entry.type], queueEntry.item.Name[1], utils.commaValue(queueEntry.price),
-                queueEntry.single == "1" and "[Single]" or "[Stack]", queueEntry.item.Id))))
+                queueEntry.single == '1' and '[Single]' or '[Stack]', queueEntry.item.Id))))
         end
     end
 
-    local queueCount = #queue
-    if doReset and queueCount > 0 then
+    local queueSize = #queue
+    if doReset and queueSize > 0 then
         throttle_timer = os.clock() + throttle_interval
-        local delay = (throttle_interval * queueCount) + (throttle_timer - os.clock())
-        print(chat.header(addon.name):append(chat.warning(string.format("Queue timer set to %.2f seconds", delay))))
+        auctioneer.eta = throttle_interval * queueSize
+        local delay = (throttle_interval * queueSize) + (throttle_timer - os.clock())
+        print(chat.header(addon.name):append(chat.warning(string.format('Queue timer set to %.2f seconds', delay))))
     end
 end
 
-ashita.events.register("packet_out", "packet_out_cb", function(e)
+function task.getQueueSize()
+    return queue and #queue or 0
+end
+
+ashita.events.register('packet_out', 'packet_out_cb', function (e)
     if (e.id == 0x15) then
         handleQueue()
     end

@@ -42,7 +42,7 @@ auctionHouseActions = require('data/auctionHouseActions')
 items = itemUtils.load()
 
 auctioneer = {
-    config = config.load(),
+    config = {},
     visible = { false },
     AuctionHouse = nil,
     auctionHouseInitialized = false,
@@ -71,9 +71,16 @@ auctioneer = {
         previousSelectedItem = nil,
         startup = true
     },
+    eta = 0,
+    lastUpdateTime = os.clock(),
     worker = nil,
-    workerResult = nil
+    workerResult = nil,
+    zoning = true
 }
+
+ashita.events.register('load', 'load_cb', function ()
+    auctioneer.config = config.load()
+end);
 
 ashita.events.register('unload', 'unload_cb', function ()
     settings.save()
@@ -93,6 +100,7 @@ end)
 
 ashita.events.register('d3d_present', 'd3d_present_cb', function ()
     ui.update()
+    ui.updateETA()
     ffxiah.pollWorker()
 end)
 
