@@ -11,7 +11,7 @@ local default = T {
     server = { 1 }
 }
 
-config.load = function()
+config.load = function ()
     return settings.load(default)
 end
 

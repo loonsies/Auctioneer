@@ -1,5 +1,5 @@
 addon.name = 'Auctioneer'
-addon.version = "2.18"
+addon.version = '2.18'
 addon.author = 'Original addon by Ivaar, ported and modified by looney'
 addon.desc = 'Interact with auction house using commands.'
 addon.link = 'https://github.com/loonsies/auctioneer'
@@ -80,7 +80,11 @@ auctioneer = {
 
 ashita.events.register('load', 'load_cb', function ()
     auctioneer.config = config.load()
-end);
+
+    settings.register('settings', 'settings_update_cb', function (newConfig)
+        auctioneer.config = newConfig
+    end)
+end)
 
 ashita.events.register('unload', 'unload_cb', function ()
     settings.save()
