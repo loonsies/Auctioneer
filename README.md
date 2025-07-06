@@ -26,7 +26,7 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 ## Commands
 
 ### Auctioneer
-- **Toggle UI:** `ah`
+- **Toggle UI:** `auctioneer|ah`
 - **Show Auctioneer UI:** `ah show`
 - **Hide Auctioneer UI:** `ah hide`
 
