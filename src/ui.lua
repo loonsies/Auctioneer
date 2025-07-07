@@ -1,6 +1,8 @@
 local ui = {}
 
 local minSize = { 550, 400 }
+local defaultSizeFFXIAH = { 600, 500 }
+local minSizeFFXIAH = { 400, 400 }
 local quantityInput = { 1 }
 local priceInput = { '' }
 local stack = { false }
@@ -530,6 +532,30 @@ function ui.drawFFXIAH()
             else
                 auctioneer.ffxiah.fetching = true
                 ffxiah.fetch(auctioneer.search.selectedItem, stack[1])
+
+                local data = auctioneer.workerResult
+
+                auctioneer.workerResult = nil
+
+                if data then
+                    local windowId = string.format('%i%i', data.itemId, os.time())
+                    if not auctioneer.ffxiah.windows[windowId] then
+                        table.insert(auctioneer.ffxiah.windows, {
+                            windowId = windowId,
+                            itemId = data.itemId,
+                            stack = data.stack,
+                            server = data.server,
+                            fetchedOn = os.time(),
+                            sales = data.sales,
+                            stock = data.stock,
+                            rate = data.rate,
+                            salesPerDay = data.salesPerDay,
+                            median = data.median,
+                            bazaar = data.bazaar
+                        })
+                    end
+                end
+                auctioneer.ffxiah.fetching = false
             end
         end
     else
@@ -676,10 +702,16 @@ function ui.drawUI()
             bazaar = window.bazaar
         }
 
-        if imgui.Begin(string.format('FFXIAH Data for %s##%s', items[data.itemId].shortName, data.windowId), open) then
-            imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, data.stack and 'Stack' or 'Single'))
-            imgui.Text(string.format('Server: %s', servers[data.server]))
-            imgui.Text(string.format('Fetched on: %s', os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)))
+        local name = items[data.itemId].shortName
+        local stk = data.stack and 'Stack' or 'Single'
+        local server = servers[data.server]
+        local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
+        imgui.SetNextWindowSizeConstraints(minSizeFFXIAH, { FLT_MAX, FLT_MAX })
+        imgui.SetNextWindowSize(defaultSizeFFXIAH, ImGuiCond_FirstUseEver)
+        if imgui.Begin(string.format('FFXIAH Data | %s [%i] (%s) | %s | %s##%s', name, data.itemId, stk, server, fetchedOn, data.windowId), open) then
+            imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, stk))
+            imgui.Text(string.format('Server: %s', server))
+            imgui.Text(string.format('Fetched on: %s', fetchedOn))
             imgui.Separator()
             if data.sales ~= nil then
                 ui.drawPriceHistory(data.sales, data.stock, data.rate, data.salesPerDay, data.median)

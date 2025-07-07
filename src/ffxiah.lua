@@ -77,126 +77,126 @@ function ffxiah.fetch(id, stack)
     local url = 'https://www.ffxiah.com/item/' .. tostring(id) .. '?stack=' .. stackParam
     local server = auctioneer.config.server[1]
 
-    if auctioneer.worker ~= nil then
-        print(chat.header(addon.name):append(chat.warning('Still fetching FFXIAH data, please wait...')))
+    --if auctioneer.worker ~= nil then
+    --    print(chat.header(addon.name):append(chat.warning('Still fetching FFXIAH data, please wait...')))
+    --    return
+    --end
+
+    --auctioneer.worker = thread.start(function ()
+    auctioneer.workerResult = {
+        itemId = id,
+        stack = stack,
+        server = server,
+        sales = nil,
+        stock = nil,
+        rate = nil,
+        salesPerDay = nil,
+        median = nil,
+        bazaar = nil,
+        fetching = false
+    }
+
+    local response = fetchUrl(url, server)
+    if not response then
         return
     end
+    local ciphers = {}
 
-    auctioneer.worker = thread.start(function ()
-        auctioneer.workerResult = {
-            itemId = id,
-            stack = stack,
-            server = server,
-            sales = nil,
-            stock = nil,
-            rate = nil,
-            salesPerDay = nil,
-            median = nil,
-            bazaar = nil,
-            fetching = false
-        }
+    if response then
+        local sales, err = handleJsonField(response, 'sales', id, function (salesTable)
+            local formatted = {}
+            for _, sale in ipairs(salesTable) do
+                table.insert(formatted, {
+                    saleon = sale.saleon or '',
+                    date = os.date('%Y-%m-%d %H:%M:%S', sale.saleon),
+                    seller = sale.seller_name or '',
+                    buyer = sale.buyer_name or '',
+                    price = sale.price or 0,
+                })
+            end
+            return formatted
+        end)
 
-        local response = fetchUrl(url, server)
-        if not response then
+        if err then
             return
         end
-        local ciphers = {}
 
-        if response then
-            local sales, err = handleJsonField(response, 'sales', id, function (salesTable)
-                local formatted = {}
-                for _, sale in ipairs(salesTable) do
-                    table.insert(formatted, {
-                        saleon = sale.saleon or '',
-                        date = os.date('%Y-%m-%d %H:%M:%S', sale.saleon),
-                        seller = sale.seller_name or '',
-                        buyer = sale.buyer_name or '',
-                        price = sale.price or 0,
-                    })
-                end
-                return formatted
-            end)
+        local stock = response:match('<td>%s*Stock%s*</td>%s*<td><span[^>]->(%d+)</span>')
+        local rate = response:match('Rate</td>%s*<td><span[^>]->([^<]+)</span>')
+        local median = response:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
 
-            if err then
-                return
-            end
-
-            local stock = response:match('<td>%s*Stock%s*</td>%s*<td><span[^>]->(%d+)</span>')
-            local rate = response:match('Rate</td>%s*<td><span[^>]->([^<]+)</span>')
-            local median = response:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
-
-            if sales ~= nil and #sales > 0 then
-                auctioneer.workerResult.sales = sales
-                auctioneer.workerResult.stock = stock
-                auctioneer.workerResult.rate = rate
-                auctioneer.workerResult.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
-                auctioneer.workerResult.median = median
-            end
-
-            local bazaar, err2 = handleJsonField(response, 'bazaar', id, function (bazaarTable)
-                local formatted = {}
-                for _, entry in ipairs(bazaarTable) do
-                    local serverAndPlayerHtml = type(entry[1]) == 'string' and entry[1] or ''
-                    local price = type(entry[2]) == 'number' and entry[2] or 0
-                    local quantity = type(entry[3]) == 'number' and entry[3] or 0
-                    local zone = type(entry[4]) == 'string' and entry[4] or ''
-                    local timestamp = type(entry[5]) == 'number' and entry[5] or 0
-
-                    local server, player = serverAndPlayerHtml:match("([^.]+)%.<a href='.-/([^/]+)'>")
-                    table.insert(formatted, {
-                        server = server or '',
-                        player = player or '',
-                        price = price or 0,
-                        quantity = quantity or 0,
-                        zone = zone or '',
-                        time = timestamp or 0
-                    })
-                end
-                return formatted
-            end)
-
-            if err2 then
-                return
-            end
-
-            if #bazaar > 0 then
-                auctioneer.workerResult.bazaar = bazaar
-            end
+        if sales ~= nil and #sales > 0 then
+            auctioneer.workerResult.sales = sales
+            auctioneer.workerResult.stock = stock
+            auctioneer.workerResult.rate = rate
+            auctioneer.workerResult.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
+            auctioneer.workerResult.median = median
         end
-    end)
-end
 
-function ffxiah.pollWorker()
-    if auctioneer.worker ~= nil then
-        local result = auctioneer.worker:wait(0)
-        if result == 0 then
-            local data = auctioneer.workerResult
+        local bazaar, err2 = handleJsonField(response, 'bazaar', id, function (bazaarTable)
+            local formatted = {}
+            for _, entry in ipairs(bazaarTable) do
+                local serverAndPlayerHtml = type(entry[1]) == 'string' and entry[1] or ''
+                local price = type(entry[2]) == 'number' and entry[2] or 0
+                local quantity = type(entry[3]) == 'number' and entry[3] or 0
+                local zone = type(entry[4]) == 'string' and entry[4] or ''
+                local timestamp = type(entry[5]) == 'number' and entry[5] or 0
 
-            auctioneer.worker:close()
-            auctioneer.worker = nil
-            auctioneer.workerResult = nil
-
-            if data then
-                local windowId = string.format('%i%i', data.itemId, os.time())
-                if not auctioneer.ffxiah.windows[windowId] then
-                    table.insert(auctioneer.ffxiah.windows, {
-                        windowId = windowId,
-                        itemId = data.itemId,
-                        stack = data.stack,
-                        server = data.server,
-                        fetchedOn = os.time(),
-                        sales = data.sales,
-                        stock = data.stock,
-                        rate = data.rate,
-                        salesPerDay = data.salesPerDay,
-                        median = data.median,
-                        bazaar = data.bazaar
-                    })
-                end
+                local srv, player = serverAndPlayerHtml:match("([^.]+)%.<a href='.-/([^/]+)'>")
+                table.insert(formatted, {
+                    server = srv or '',
+                    player = player or '',
+                    price = price or 0,
+                    quantity = quantity or 0,
+                    zone = zone or '',
+                    time = timestamp or 0
+                })
             end
-            auctioneer.ffxiah.fetching = false
+            return formatted
+        end)
+
+        if err2 then
+            return
+        end
+
+        if #bazaar > 0 then
+            auctioneer.workerResult.bazaar = bazaar
         end
     end
+    --end)
 end
+
+--function ffxiah.pollWorker()
+--    if auctioneer.worker ~= nil then
+--        local result = auctioneer.worker:wait(0)
+--        if result == 0 then
+--            local data = auctioneer.workerResult
+--
+--            auctioneer.worker:close()
+--            auctioneer.worker = nil
+--            auctioneer.workerResult = nil
+--
+--            if data then
+--                local windowId = string.format('%i%i', data.itemId, os.time())
+--                if not auctioneer.ffxiah.windows[windowId] then
+--                    table.insert(auctioneer.ffxiah.windows, {
+--                        windowId = windowId,
+--                        itemId = data.itemId,
+--                        stack = data.stack,
+--                        server = data.server,
+--                        fetchedOn = os.time(),
+--                        sales = data.sales,
+--                        stock = data.stock,
+--                        rate = data.rate,
+--                        salesPerDay = data.salesPerDay,
+--                        median = data.median,
+--                        bazaar = data.bazaar
+--                    })
+--                end
+--            end
+--            auctioneer.ffxiah.fetching = false
+--        end
+--    end
+--end
 
 return ffxiah
