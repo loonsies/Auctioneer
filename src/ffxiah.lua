@@ -77,12 +77,6 @@ function ffxiah.fetch(id, stack)
     local url = 'https://www.ffxiah.com/item/' .. tostring(id) .. '?stack=' .. stackParam
     local server = auctioneer.config.server[1]
 
-    --if auctioneer.worker ~= nil then
-    --    print(chat.header(addon.name):append(chat.warning('Still fetching FFXIAH data, please wait...')))
-    --    return
-    --end
-
-    --auctioneer.worker = thread.start(function ()
     auctioneer.workerResult = {
         itemId = id,
         stack = stack,
@@ -106,6 +100,10 @@ function ffxiah.fetch(id, stack)
         local sales, err = handleJsonField(response, 'sales', id, function (salesTable)
             local formatted = {}
             for _, sale in ipairs(salesTable) do
+                if not auctioneer.config.separateFFXIAH[1] then
+                    auctioneer.ffxiah.windows = {}
+                end
+
                 table.insert(formatted, {
                     saleon = sale.saleon or '',
                     date = os.date('%Y-%m-%d %H:%M:%S', sale.saleon),
@@ -163,40 +161,6 @@ function ffxiah.fetch(id, stack)
             auctioneer.workerResult.bazaar = bazaar
         end
     end
-    --end)
 end
-
---function ffxiah.pollWorker()
---    if auctioneer.worker ~= nil then
---        local result = auctioneer.worker:wait(0)
---        if result == 0 then
---            local data = auctioneer.workerResult
---
---            auctioneer.worker:close()
---            auctioneer.worker = nil
---            auctioneer.workerResult = nil
---
---            if data then
---                local windowId = string.format('%i%i', data.itemId, os.time())
---                if not auctioneer.ffxiah.windows[windowId] then
---                    table.insert(auctioneer.ffxiah.windows, {
---                        windowId = windowId,
---                        itemId = data.itemId,
---                        stack = data.stack,
---                        server = data.server,
---                        fetchedOn = os.time(),
---                        sales = data.sales,
---                        stock = data.stock,
---                        rate = data.rate,
---                        salesPerDay = data.salesPerDay,
---                        median = data.median,
---                        bazaar = data.bazaar
---                    })
---                end
---            end
---            auctioneer.ffxiah.fetching = false
---        end
---    end
---end
 
 return ffxiah

@@ -8,7 +8,8 @@ local default = T {
     auctionHouse = { true },
     removeFailedBuyTasks = { true },
     searchFilters = { true },
-    server = { 1 }
+    server = { 1 },
+    separateFFXIAH = { true }
 }
 
 config.load = function ()

@@ -561,6 +561,42 @@ function ui.drawFFXIAH()
     else
         imgui.Text('Fetching...')
     end
+
+    if not auctioneer.config.separateFFXIAH[1] and auctioneer.ffxiah.windows[1] then
+        local window = auctioneer.ffxiah.windows[1]
+        data = {
+            windowId = window.windowId,
+            itemId = window.itemId,
+            stack = window.stack,
+            server = window.server,
+            fetchedOn = window.fetchedOn,
+            sales = window.sales,
+            stock = window.stock,
+            rate = window.rate,
+            salesPerDay = window.salesPerDay,
+            median = window.median,
+            bazaar = window.bazaar
+        }
+
+        local name = items[data.itemId].shortName
+        local stk = data.stack and 'Stack' or 'Single'
+        local server = servers[data.server]
+        local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
+
+        imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, stk))
+        imgui.Text(string.format('Server: %s', server))
+        imgui.Text(string.format('Fetched on: %s', fetchedOn))
+        imgui.Separator()
+        if data.sales ~= nil then
+            ui.drawPriceHistory(data.sales, data.stock, data.rate, data.salesPerDay, data.median)
+            if data.bazaar ~= nil then
+                imgui.Separator()
+            end
+        end
+        if data.bazaar ~= nil then
+            ui.drawBazaar(data.bazaar)
+        end
+    end
 end
 
 function ui.drawBuySellTab()
@@ -658,6 +694,63 @@ function ui.drawSettingsTab()
     if imgui.Checkbox('Enable search filters', auctioneer.config.searchFilters) then
         settings.save()
     end
+
+    if imgui.Checkbox('Separate FFXIAH results in new windows', auctioneer.config.separateFFXIAH) then
+        auctioneer.ffxiah.windows = {}
+        settings.save()
+    end
+end
+
+function ui.drawFFXIAHWindows()
+    local removeIndices = {}
+
+    for id, window in ipairs(auctioneer.ffxiah.windows) do
+        local open = { true }
+        data = {
+            windowId = window.windowId,
+            itemId = window.itemId,
+            stack = window.stack,
+            server = window.server,
+            fetchedOn = window.fetchedOn,
+            sales = window.sales,
+            stock = window.stock,
+            rate = window.rate,
+            salesPerDay = window.salesPerDay,
+            median = window.median,
+            bazaar = window.bazaar
+        }
+
+        local name = items[data.itemId].shortName
+        local stk = data.stack and 'Stack' or 'Single'
+        local server = servers[data.server]
+        local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
+        imgui.SetNextWindowSizeConstraints(minSizeFFXIAH, { FLT_MAX, FLT_MAX })
+        imgui.SetNextWindowSize(defaultSizeFFXIAH, ImGuiCond_FirstUseEver)
+        if imgui.Begin(string.format('FFXIAH Data | %s [%i] (%s) | %s | %s##%s', name, data.itemId, stk, server, fetchedOn, data.windowId), open, ImGuiWindowFlags_NoSavedSettings) then
+            imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, stk))
+            imgui.Text(string.format('Server: %s', server))
+            imgui.Text(string.format('Fetched on: %s', fetchedOn))
+            imgui.Separator()
+            if data.sales ~= nil then
+                ui.drawPriceHistory(data.sales, data.stock, data.rate, data.salesPerDay, data.median)
+                if data.bazaar ~= nil then
+                    imgui.Separator()
+                end
+            end
+            if data.bazaar ~= nil then
+                ui.drawBazaar(data.bazaar)
+            end
+        end
+        imgui.End()
+
+        if not open[1] then
+            table.insert(removeIndices, id)
+        end
+    end
+
+    for i = #removeIndices, 1, -1 do
+        table.remove(auctioneer.ffxiah.windows, removeIndices[i])
+    end
 end
 
 function ui.drawUI()
@@ -684,54 +777,8 @@ function ui.drawUI()
         imgui.End()
     end
 
-    local removeIndices = {}
-
-    for id, window in ipairs(auctioneer.ffxiah.windows) do
-        local open = { true }
-        data = {
-            windowId = window.windowId,
-            itemId = window.itemId,
-            stack = window.stack,
-            server = window.server,
-            fetchedOn = window.fetchedOn,
-            sales = window.sales,
-            stock = window.stock,
-            rate = window.rate,
-            salesPerDay = window.salesPerDay,
-            median = window.median,
-            bazaar = window.bazaar
-        }
-
-        local name = items[data.itemId].shortName
-        local stk = data.stack and 'Stack' or 'Single'
-        local server = servers[data.server]
-        local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
-        imgui.SetNextWindowSizeConstraints(minSizeFFXIAH, { FLT_MAX, FLT_MAX })
-        imgui.SetNextWindowSize(defaultSizeFFXIAH, ImGuiCond_FirstUseEver)
-        if imgui.Begin(string.format('FFXIAH Data | %s [%i] (%s) | %s | %s##%s', name, data.itemId, stk, server, fetchedOn, data.windowId), open) then
-            imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, stk))
-            imgui.Text(string.format('Server: %s', server))
-            imgui.Text(string.format('Fetched on: %s', fetchedOn))
-            imgui.Separator()
-            if data.sales ~= nil then
-                ui.drawPriceHistory(data.sales, data.stock, data.rate, data.salesPerDay, data.median)
-                if data.bazaar ~= nil then
-                    imgui.Separator()
-                end
-            end
-            if data.bazaar ~= nil then
-                ui.drawBazaar(data.bazaar)
-            end
-        end
-        imgui.End()
-
-        if not open[1] then
-            table.insert(removeIndices, id)
-        end
-    end
-
-    for i = #removeIndices, 1, -1 do
-        table.remove(auctioneer.ffxiah.windows, removeIndices[i])
+    if auctioneer.config.separateFFXIAH[1] then
+        ui.drawFFXIAHWindows()
     end
 end
 
