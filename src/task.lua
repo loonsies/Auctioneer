@@ -1,9 +1,16 @@
-task = {}
+local chat = require('chat')
+local utils = require('src/utils')
+local taskTypes = require('data/taskTypes')
+
+local task = {}
+
 local queue = {}
 local throttle_timer = 0
 local throttle_interval = 8
 
 local function handleEntry(entry)
+    local auctionHouse = require('src/auctionHouse')
+
     if entry.type == taskTypes.buy then
         if auctionHouse.buy(entry.item, entry.single, entry.price) then
             throttle_timer = os.clock() + throttle_interval

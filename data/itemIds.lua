@@ -1,4 +1,4 @@
-itemIds = {
+local itemIds = {
     { 2,     34 },
     { 3,     34 },
     { 4,     34 },

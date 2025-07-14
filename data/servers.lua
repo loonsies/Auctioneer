@@ -1,4 +1,4 @@
-servers = {
+local servers = {
     [28] = 'Asura',
     [1] = 'Bahamut',
     [25] = 'Bismarck',

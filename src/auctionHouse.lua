@@ -1,3 +1,10 @@
+local chat = require('chat')
+local utils = require('src/utils')
+local task = require('src/task')
+local taskTypes = require('data/taskTypes')
+local auctionHouseActions = require('data/auctionHouseActions')
+local itemFlags = require('data/itemFlags')
+
 local auctionHouse = {}
 
 function auctionHouse.updateAuctionHouse(packet)
@@ -98,7 +105,6 @@ function auctionHouse.findEmptySlot()
 end
 
 function auctionHouse.clearSales()
-    cleared = false
     if auctioneer.auctionHouse == nil then
         print(chat.header(addon.name):append(chat.error(
             'Interact with auction house or use /ah menu to initialize sales')))
@@ -178,7 +184,7 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
     end
     price = tonumber(price)
 
-    entry = {
+    local entry = {
         type = action == auctionHouseActions.buy and taskTypes.buy or auctionHouseActions.sell,
         item = item,
         single = single,

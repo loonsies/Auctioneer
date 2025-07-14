@@ -1,4 +1,6 @@
-itemUtils = {}
+local itemIds = require('data/itemIds')
+
+local itemUtils = {}
 
 function itemUtils.load()
     local items = {}
@@ -15,7 +17,7 @@ function itemUtils.load()
             local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
             local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)
 
-            if (isBazaarable or isAuctionable) and item.Name[1] ~= '.' then -- Get rid of all the empty items
+            if item.Name[1] ~= '.' then -- Get rid of all the empty items
                 if not items[id] then
                     items[id] = {}
                 end
@@ -28,6 +30,8 @@ function itemUtils.load()
                 items[id].jobs = item.Jobs
                 items[id].bitmap = item.Bitmap
                 items[id].imageSize = item.ImageSize
+                items[id].isBazaarable = isBazaarable
+                items[id].isAuctionable = isAuctionable
             end
         end
     end

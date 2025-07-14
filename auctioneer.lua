@@ -6,78 +6,54 @@ addon.link = 'https://github.com/loonsies/auctioneer'
 
 -- Ashita dependencies
 require 'common'
-settings = require('settings')
-chat = require('chat')
-imgui = require('imgui')
-ffi = require('ffi')
-d3d8 = require('d3d8')
-http = require('socket.http')
-ltn12 = require('socket.ltn12')
-json = require('json')
+local settings = require('settings')
 
 -- Local dependencies
-commands = require('src/commands')
-config = require('src/config')
-ui = require('src/ui')
-packets = require('src/packets')
-auctionHouse = require('src/auctionHouse')
-utils = require('src/utils')
-task = require('src/task')
-ffxiah = require('src/ffxiah')
-search = require('src/search')
-itemUtils = require('src/itemUtils')
+local commands = require('src/commands')
+local config = require('src/config')
+local ui = require('src/ui')
+local packets = require('src/packets')
+local itemUtils = require('src/itemUtils')
+local inventory = require('src/inventory')
 
 -- Data
-zones = require('data/zones')
-itemIds = require('data/itemIds')
-itemFlags = require('data/itemFlags')
-categories = require('data/categories')
-jobs = require('data/jobs')
-servers = require('data/servers')
-salesRating = require('data/salesRating')
-searchStatus = require('data/searchStatus')
-taskTypes = require('data/taskTypes')
-auctionHouseActions = require('data/auctionHouseActions')
+local tabData = require('data/tabData')
+local tabTypes = require('data/tabTypes')
 
 items = itemUtils.load()
 
 auctioneer = {
     config = {},
     visible = { false },
-    AuctionHouse = nil,
+    auctionHouse = nil,
     auctionHouseInitialized = false,
     ffxiah = {
         fetching = false,
         windows = {}
     },
-    search = {
-        input = { '' },
-        previousInput = { '' },
-        category = 999,
-        previousCategory = 999,
-        lvMinInput = { 0 },
-        previousLvMinInput = { 0 },
-        lvMaxInput = { 99 },
-        previousLvMaxInput = { 99 },
-        jobSelected = {},
-        previousJobSelected = {},
-        status = searchStatus.noResults,
-        selectedItem = nil,
-        previousSelectedItem = nil,
-        startup = true
+    tabs = {
+        [1] = tabData.new(),
+        [2] = tabData.new(),
+        [3] = tabData.new(),
+        [4] = tabData.new(),
+        [5] = tabData.new()
     },
+    currentTab = tabTypes.allItems,
     eta = 0,
     lastUpdateTime = os.clock(),
     worker = nil,
     workerResult = nil,
     zoning = false,
+    containers = inventory.new()
 }
 
 ashita.events.register('load', 'load_cb', function ()
     auctioneer.config = config.load()
+    inventory.update()
 
     settings.register('settings', 'settings_update_cb', function (newConfig)
         auctioneer.config = newConfig
+        inventory.update()
     end)
 end)
 

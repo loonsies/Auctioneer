@@ -1,6 +1,10 @@
-local thread = require('src/thread')
+local chat = require('chat')
+local json = require('json')
+local http = require('socket.http')
+local ltn12 = require('socket.ltn12')
+local utils = require('src/utils')
 
-ffxiah = {}
+local ffxiah = {}
 
 local function getBaseUrl(url)
     return url:match('^(https?://[^/]+)')

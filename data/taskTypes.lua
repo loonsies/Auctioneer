@@ -1,4 +1,4 @@
-taskTypes = {
+local taskTypes = {
     buy = 1,
     sell = 2,
     confirmSell = 3,

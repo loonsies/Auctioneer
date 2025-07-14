@@ -1,3 +1,10 @@
+local chat = require('chat')
+local auctionHouse = require('src/auctionHouse')
+local task = require('src/task')
+local taskTypes = require('data/taskTypes')
+local inventory = require('src/inventory')
+local debounce = require('src/debounce')
+
 local packets = {}
 
 function packets.handleIncomingPacket(e)
@@ -74,6 +81,15 @@ function packets.handleIncomingPacket(e)
         if auctioneer.visible[1] then
             auctioneer.visible[1] = false
             auctioneer.zoning = true
+        end
+    elseif e.id == 0x01D then
+        debounce(inventory.update)
+    elseif e.id == 0x01E then
+        local flag = struct.unpack('i1', e.data, 0x04 + 1)
+        local container = struct.unpack('i1', e.data, 0x05 + 1)
+
+        if flag == 1 then
+            debounce(inventory.update)
         end
     end
 end

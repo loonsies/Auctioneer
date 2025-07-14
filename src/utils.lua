@@ -1,3 +1,8 @@
+local ffi = require('ffi')
+local d3d8 = require('d3d8')
+local jobs = require('data/jobs')
+local salesRating = require('data/salesRating')
+
 local utils = {}
 
 function utils.commaValue(n)

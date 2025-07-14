@@ -1,4 +1,4 @@
-jobs = {
+local jobs = {
     [1] = 'WAR',
     [2] = 'MNK',
     [3] = 'WHM',

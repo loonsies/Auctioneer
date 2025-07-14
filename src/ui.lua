@@ -1,3 +1,21 @@
+local imgui = require('imgui')
+local chat = require('chat')
+local ffi = require('ffi')
+local settings = require('settings')
+local auctionHouse = require('src/auctionHouse')
+local search = require('src/search')
+local task = require('src/task')
+local commands = require('src/commands')
+local utils = require('src/utils')
+local ffxiah = require('src/ffxiah')
+local inventory = require('src/inventory')
+local categories = require('data/categories')
+local auctionHouseActions = require('data/auctionHouseActions')
+local jobs = require('data/jobs')
+local searchStatus = require('data/searchStatus')
+local servers = require('data/servers')
+local tabTypes = require('data/tabTypes')
+
 local ui = {}
 
 local minSize = { 550, 400 }
@@ -8,9 +26,10 @@ local priceInput = { '' }
 local stack = { false }
 local gilIcon = nil
 
-local preview = {}
-preview.textureCache = {}
-preview.itemBackground = nil
+local preview = {
+    textureCache = {},
+    itemBackground = nil
+}
 
 local modal = {
     visible = false
@@ -31,27 +50,29 @@ function ui.update()
         return
     end
 
-    local currentInput = table.concat(auctioneer.search.input)
-    local previousInput = table.concat(auctioneer.search.previousInput)
-    local lvMinInput = table.concat(auctioneer.search.lvMinInput)
-    local previousLvMinInput = table.concat(auctioneer.search.previousLvMinInput)
-    local lvMaxInput = table.concat(auctioneer.search.lvMaxInput)
-    local previousLvMaxInput = table.concat(auctioneer.search.previousLvMaxInput)
-    local selectedJobs = table.concat(auctioneer.search.jobSelected)
-    local previousSelectedJobs = table.concat(auctioneer.search.previousJobSelected)
+    for tabType, tabObj in pairs(auctioneer.tabs) do
+        local currentInput = table.concat(tabObj.input)
+        local previousInput = table.concat(tabObj.previousInput)
+        local lvMinInput = table.concat(tabObj.lvMinInput)
+        local previousLvMinInput = table.concat(tabObj.previousLvMinInput)
+        local lvMaxInput = table.concat(tabObj.lvMaxInput)
+        local previousLvMaxInput = table.concat(tabObj.previousLvMaxInput)
+        local selectedJobs = table.concat(tabObj.jobSelected)
+        local previousSelectedJobs = table.concat(tabObj.previousJobSelected)
 
-    if currentInput ~= previousInput or auctioneer.search.category ~= auctioneer.search.previousCategory or lvMinInput ~= previousLvMinInput or lvMaxInput ~= previousLvMaxInput or selectedJobs ~= previousSelectedJobs or auctioneer.search.startup then
-        search.update()
-        auctioneer.search.previousInput = { currentInput }
-        auctioneer.search.previousCategory = auctioneer.search.category
-        auctioneer.search.startup = false
-        auctioneer.search.previousLvMinInput = { lvMinInput }
-        auctioneer.search.previousLvMaxInput = { lvMaxInput }
-        auctioneer.search.previousJobSelected = { selectedJobs }
-    end
+        if currentInput ~= previousInput or tabObj.category ~= tabObj.previousCategory or lvMinInput ~= previousLvMinInput or lvMaxInput ~= previousLvMaxInput or selectedJobs ~= previousSelectedJobs or tabObj.startup then
+            search.update(tabType, tabObj)
+            tabObj.previousInput = { currentInput }
+            tabObj.previousCategory = tabObj.category
+            tabObj.startup = false
+            tabObj.previousLvMinInput = { lvMinInput }
+            tabObj.previousLvMaxInput = { lvMaxInput }
+            tabObj.previousJobSelected = { selectedJobs }
+        end
 
-    if auctioneer.search.selectedItem ~= auctioneer.search.previousSelectedItem then
-        auctioneer.search.previousSelectedItem = auctioneer.search.selectedItem
+        if tabObj.selectedItem ~= tabObj.previousSelectedItem then
+            tabObj.previousSelectedItem = tabObj.selectedItem
+        end
     end
 
     ui.drawUI()
@@ -146,12 +167,12 @@ function ui.drawFilters()
     imgui.Text('Category')
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    if imgui.BeginCombo('##CategoryCombo', categories.list[auctioneer.search.category]) then
+    if imgui.BeginCombo('##CategoryCombo', categories.list[auctioneer.tabs[auctioneer.currentTab].category]) then
         for _, id in ipairs(categories.order) do
             local category = categories.list[id]
-            local is_selected = (auctioneer.search.category == id)
+            local is_selected = (auctioneer.tabs[auctioneer.currentTab].category == id)
             if imgui.Selectable(category, is_selected) then
-                auctioneer.search.category = id
+                auctioneer.tabs[auctioneer.currentTab].category = id
             end
         end
         imgui.EndCombo()
@@ -160,13 +181,13 @@ function ui.drawFilters()
     imgui.Text('Lv. Min')
     imgui.SameLine()
     imgui.SetNextItemWidth(100)
-    if imgui.InputInt('##LvMin', auctioneer.search.lvMinInput) then
-        if auctioneer.search.lvMinInput[1] < 0 then
-            auctioneer.search.lvMinInput[1] = 0
-        elseif auctioneer.search.lvMinInput[1] > 99 then
-            auctioneer.search.lvMinInput[1] = 99
-        elseif auctioneer.search.lvMinInput[1] > auctioneer.search.lvMaxInput[1] then
-            auctioneer.search.lvMinInput[1] = auctioneer.search.previousLvMinInput[1]
+    if imgui.InputInt('##LvMin', auctioneer.tabs[auctioneer.currentTab].lvMinInput) then
+        if auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] < 0 then
+            auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] = 0
+        elseif auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] > 99 then
+            auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] = 99
+        elseif auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] > auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] then
+            auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] = auctioneer.tabs[auctioneer.currentTab].previousLvMinInput[1]
         end
     end
     imgui.SameLine()
@@ -174,29 +195,35 @@ function ui.drawFilters()
     imgui.Text('Lv. Max')
     imgui.SameLine()
     imgui.SetNextItemWidth(100)
-    if imgui.InputInt('##LvMax', auctioneer.search.lvMaxInput) then
-        if auctioneer.search.lvMaxInput[1] < 0 then
-            auctioneer.search.lvMaxInput[1] = 0
-        elseif auctioneer.search.lvMaxInput[1] > 99 then
-            auctioneer.search.lvMaxInput[1] = 99
-        elseif auctioneer.search.lvMaxInput[1] < auctioneer.search.lvMinInput[1] then
-            auctioneer.search.lvMaxInput[1] = auctioneer.search.previousLvMaxInput[1]
+    if imgui.InputInt('##LvMax', auctioneer.tabs[auctioneer.currentTab].lvMaxInput) then
+        if auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] < 0 then
+            auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] = 0
+        elseif auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] > 99 then
+            auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] = 99
+        elseif auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] < auctioneer.tabs[auctioneer.currentTab].lvMinInput[1] then
+            auctioneer.tabs[auctioneer.currentTab].lvMaxInput[1] = auctioneer.tabs[auctioneer.currentTab].previousLvMaxInput[1]
         end
     end
+    imgui.SameLine()
+
+    if imgui.Checkbox('Show all items', auctioneer.tabs[auctioneer.currentTab].showAllItems) then
+        search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+    end
+    imgui.ShowHelp('Displays all items, even those who are not auctionable/bazaarable', true)
 
     imgui.Text('Jobs')
     imgui.SetNextItemWidth(-1)
     imgui.SameLine()
     local jobComboText = ''
-    if #auctioneer.search.jobSelected == 0 then
+    if #auctioneer.tabs[auctioneer.currentTab].jobSelected == 0 then
         jobComboText = 'No jobs selected'
     else
-        jobComboText = string.format('%i jobs selected', #auctioneer.search.jobSelected)
+        jobComboText = string.format('%i jobs selected', #auctioneer.tabs[auctioneer.currentTab].jobSelected)
     end
     if imgui.BeginCombo('##JobSelectCombo', jobComboText) then
         for id, jobName in ipairs(jobs) do
             local isSelected = false
-            for _, selectedId in ipairs(auctioneer.search.jobSelected) do
+            for _, selectedId in ipairs(auctioneer.tabs[auctioneer.currentTab].jobSelected) do
                 if selectedId == id then
                     isSelected = true
                     break
@@ -206,11 +233,11 @@ function ui.drawFilters()
             local selected = { isSelected }
             if imgui.Checkbox(jobName, selected) then
                 if selected[1] then
-                    table.insert(auctioneer.search.jobSelected, id)
+                    table.insert(auctioneer.tabs[auctioneer.currentTab].jobSelected, id)
                 else
-                    for i, selectedId in ipairs(auctioneer.search.jobSelected) do
+                    for i, selectedId in ipairs(auctioneer.tabs[auctioneer.currentTab].jobSelected) do
                         if selectedId == id then
-                            table.remove(auctioneer.search.jobSelected, i)
+                            table.remove(auctioneer.tabs[auctioneer.currentTab].jobSelected, i)
                             break
                         end
                     end
@@ -222,27 +249,40 @@ function ui.drawFilters()
 end
 
 function ui.drawSearch()
-    imgui.Text('Search (' .. #auctioneer.search.results .. ')')
-    imgui.SetNextItemWidth(-1)
-    imgui.InputText('##SearchInput', auctioneer.search.input, 48)
+    local currentTab = auctioneer.tabs[auctioneer.currentTab]
+    local currentTabName = tabTypes[auctioneer.currentTab]
 
-    if imgui.BeginTable('##SearchResultsTableChild', 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
+    imgui.Text('Search (' .. #currentTab.results .. ')')
+    imgui.SetNextItemWidth(-1)
+    imgui.InputText('##SearchInput', currentTab.input, 48)
+
+    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
         imgui.TableSetupColumn('##ItemColumn', ImGuiTableFlags_ScrollY)
 
-        if auctioneer.search.status == searchStatus.found then
+        if currentTab.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
-            clipper:Begin(#auctioneer.search.results, -1)
+            clipper:Begin(#currentTab.results, -1)
 
             while clipper:Step() do
                 for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
                     imgui.TableNextRow()
                     imgui.TableSetColumnIndex(0)
 
-                    local item = auctioneer.search.results[i + 1]
-                    local itemLabel = items[item].shortName
-                    local isSelected = (auctioneer.search.selectedItem == item)
+                    local itemEntry = currentTab.results[i + 1]
+                    local itemId = itemEntry.id
+                    local itemStack = itemEntry.stack
+
+                    local isSelected = (currentTab.selectedItem == itemId)
+                    local itemLabel = items[itemId].shortName
+
+                    if auctioneer.currentTab ~= tabTypes.allItems then
+                        itemLabel = string.format('%s %s', itemLabel, itemStack)
+                    end
+
+                    itemLabel = string.format('%s##%i', itemLabel, itemId)
+
                     if imgui.Selectable(itemLabel, isSelected) then
-                        auctioneer.search.selectedItem = item
+                        currentTab.selectedItem = itemId
                     end
                 end
             end
@@ -251,7 +291,7 @@ function ui.drawSearch()
         else
             imgui.TableNextRow()
             imgui.TableSetColumnIndex(0)
-            imgui.Text(searchStatus[auctioneer.search.status])
+            imgui.Text(searchStatus[currentTab.status])
         end
         imgui.EndTable()
     end
@@ -259,8 +299,8 @@ end
 
 function ui.drawItemPreview()
     if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, true) then
-        if auctioneer.search.selectedItem ~= nil then
-            local id = auctioneer.search.selectedItem
+        if auctioneer.tabs[auctioneer.currentTab].selectedItem ~= nil then
+            local id = auctioneer.tabs[auctioneer.currentTab].selectedItem
             local item = items[id]
             local iconSize = 40
 
@@ -308,10 +348,10 @@ end
 
 function ui.drawUtils()
     if imgui.Button('Open wiki') then
-        if auctioneer.search.selectedItem == nil then
+        if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         else
-            local shortName = (items[auctioneer.search.selectedItem].shortName)
+            local shortName = (items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName)
             shortName = string.gsub(shortName, ' ', '_')
             local cmd = string.format('start "" "https://bg-wiki.com/ffxi/%s"', shortName)
 
@@ -321,10 +361,10 @@ function ui.drawUtils()
     imgui.SameLine()
 
     if imgui.Button('Open FFXIAH') then
-        if auctioneer.search.selectedItem == nil then
+        if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         else
-            local cmd = string.format('start "" "https://www.ffxiah.com/item/%i?stack=%i"', auctioneer.search.selectedItem, stack[1] and 1 or 0)
+            local cmd = string.format('start "" "https://www.ffxiah.com/item/%i?stack=%i"', auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1] and 1 or 0)
             os.execute(cmd)
         end
     end
@@ -363,7 +403,7 @@ function ui.drawBuySellCommands()
     if imgui.Button('Buy') then
         if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
-        elseif auctioneer.search.selectedItem == nil then
+        elseif auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
@@ -373,14 +413,14 @@ function ui.drawBuySellCommands()
                     modal.visible = true
                     modal.action = auctionHouseActions.buy
                     modal.args = {
-                        items[auctioneer.search.selectedItem].shortName,
+                        items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
                         stack[1] and '1' or '0',
                         priceInput[1],
                         quantityInput[1],
                     }
                 end
             else
-                if auctionHouse.proposal(auctionHouseActions.buy, items[auctioneer.search.selectedItem].shortName,
+                if auctionHouse.proposal(auctionHouseActions.buy, items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
                         stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
                     quantityInput = { 1 }
                 end
@@ -392,7 +432,7 @@ function ui.drawBuySellCommands()
     if imgui.Button('Sell') then
         if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
-        elseif auctioneer.search.selectedItem == nil then
+        elseif auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
@@ -402,14 +442,14 @@ function ui.drawBuySellCommands()
                     modal.visible = true
                     modal.action = auctionHouseActions.sell
                     modal.args = {
-                        items[auctioneer.search.selectedItem].shortName,
+                        items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
                         stack[1] and '1' or '0',
                         priceInput[1],
                         quantityInput[1],
                     }
                 end
             else
-                if auctionHouse.proposal(auctionHouseActions.sell, items[auctioneer.search.selectedItem].shortName,
+                if auctionHouse.proposal(auctionHouseActions.sell, items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
                         stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
                     quantityInput = { 1 }
                 end
@@ -528,11 +568,11 @@ function ui.drawFFXIAH()
 
     if auctioneer.ffxiah.fetching == false then
         if imgui.Button('Fetch prices & bazaar') then
-            if auctioneer.search.selectedItem == nil then
+            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
                 print(chat.header(addon.name):append(chat.error('Please select an item')))
             else
                 auctioneer.ffxiah.fetching = true
-                ffxiah.fetch(auctioneer.search.selectedItem, stack[1])
+                ffxiah.fetch(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1])
 
                 local data = auctioneer.workerResult
 
@@ -565,7 +605,7 @@ function ui.drawFFXIAH()
 
     if not auctioneer.config.separateFFXIAH[1] and auctioneer.ffxiah.windows[1] then
         local window = auctioneer.ffxiah.windows[1]
-        data = {
+        local data = {
             windowId = window.windowId,
             itemId = window.itemId,
             stack = window.stack,
@@ -603,17 +643,34 @@ end
 function ui.drawBuySellTab()
     ui.drawGlobalCommands()
     imgui.Separator()
+
     if auctioneer.config.searchFilters[1] then
         ui.drawFilters()
         imgui.Dummy({ 0, 0 })
     end
-    ui.drawSearch()
+
+    if imgui.BeginTabBar('##AuctioneerSearchTabs') then
+        for i = 1, 5 do
+            local tabLabel = tabTypes[i]
+            if imgui.BeginTabItem(tabLabel) then
+                auctioneer.currentTab = i
+                ui.drawSearch()
+                imgui.EndTabItem()
+            end
+        end
+        imgui.EndTabBar()
+    end
+
     if auctioneer.config.itemPreview[1] then
         ui.drawItemPreview()
     end
+
     ui.drawBuySellCommands()
+
     imgui.Dummy({ 0, 0 })
+
     ui.drawUtils()
+
     if auctioneer.config.ffxiah[1] then
         imgui.Separator()
         ui.drawFFXIAH()
@@ -707,7 +764,7 @@ function ui.drawFFXIAHWindows()
 
     for id, window in ipairs(auctioneer.ffxiah.windows) do
         local open = { true }
-        data = {
+        local data = {
             windowId = window.windowId,
             itemId = window.itemId,
             stack = window.stack,

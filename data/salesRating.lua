@@ -1,4 +1,4 @@
-salesRating = {}
+local salesRating = {}
 
 salesRating.labels = {
     'Dead Slow',

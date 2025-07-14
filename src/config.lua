@@ -1,3 +1,5 @@
+local settings = require('settings')
+
 local config = {}
 
 local default = T {

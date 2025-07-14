@@ -1,35 +1,54 @@
-search = {}
+local utils = require('src/utils')
+local inventory = require('src/inventory')
+local jobs = require('data/jobs')
+local searchStatus = require('data/searchStatus')
+local tabTypes = require('data/tabTypes')
 
-function search.update()
-    auctioneer.search.results = {}
-    input = table.concat(auctioneer.search.input)
+local search = {}
 
-    for id, item in pairs(items) do
-        if auctioneer.search.category == 999 or auctioneer.search.category == item.category then
-            if item.longName and string.find(item.longName:lower(), input:lower(), 1, true) or item.shortName and
-                string.find(item.shortName:lower(), input:lower(), 1, true) then
-                if auctioneer.config.searchFilters[1] then
-                    if item.level >= auctioneer.search.lvMinInput[1] and item.level <= auctioneer.search.lvMaxInput[1] then
-                        if #auctioneer.search.jobSelected > 0 then
-                            local itemJobs = utils.getJobs(item.jobs)
-                            local common = utils.findCommonElements(itemJobs, auctioneer.search.jobSelected)
-                            if #common > 0 or jobs[1] == 999 then
-                                table.insert(auctioneer.search.results, id)
+function search.update(tabType, tab)
+    local input = table.concat(tab.input)
+    local itemSet = inventory.getItemSet(tabType)
+    tab.results = {}
+
+    for id, item in pairs(itemSet) do
+        local itemId = id
+        local itemStack = '0/0'
+        if tabType ~= tabTypes.allItems then
+            itemId = item.id
+            itemStack = item.stack
+        end
+
+        local itemData = items[itemId]
+
+        if (itemData.isBazaarable or itemData.isAuctionable or tab.showAllItems[1]) then
+            if tab.category == 999 or tab.category == itemData.category then
+                if itemData.longName and string.find(itemData.longName:lower(), input:lower(), 1, true) or itemData.shortName and
+                    string.find(itemData.shortName:lower(), input:lower(), 1, true) then
+                    if auctioneer.config.searchFilters[1] then
+                        if itemData.level >= tab.lvMinInput[1] and itemData.level <= tab.lvMaxInput[1] then
+                            if #tab.jobSelected > 0 then
+                                local itemJobs = utils.getJobs(itemData.jobs)
+                                local common = utils.findCommonElements(itemJobs, tab.jobSelected)
+                                if #common > 0 or jobs[1] == 999 then
+                                    table.insert(tab.results, { id = itemId, stack = itemStack })
+                                end
+                            else
+                                table.insert(tab.results, { id = itemId, stack = itemStack })
                             end
-                        else
-                            table.insert(auctioneer.search.results, id)
                         end
+                    else
+                        table.insert(tab.results, { id = itemId, stack = itemStack })
                     end
-                else
-                    table.insert(auctioneer.search.results, id)
                 end
             end
         end
     end
-    if #auctioneer.search.results == 0 then
-        auctioneer.search.status = searchStatus.noResults
+
+    if #tab.results == 0 then
+        tab.status = searchStatus.noResults
     else
-        auctioneer.search.status = searchStatus.found
+        tab.status = searchStatus.found
     end
 end
 

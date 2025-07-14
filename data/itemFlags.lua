@@ -1,4 +1,4 @@
-itemFlags = {
+local itemFlags = {
     None = 0x0000,
     Flag00 = 0x0001,
     Flag01 = 0x0002,

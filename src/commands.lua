@@ -1,4 +1,10 @@
-commands = {}
+local chat = require('chat')
+local settings = require('settings')
+local auctionHouse = require('src/auctionHouse')
+local auctionHouseActions = require('data/auctionHouseActions')
+local zones = require('data/zones')
+
+local commands = {}
 
 function commands.handleBuySell(args, command)
     if #args < 4 then
