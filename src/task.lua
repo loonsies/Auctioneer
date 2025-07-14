@@ -38,7 +38,7 @@ function task.clear()
     end
 
     queue = {}
-    auctioneer.eta = 0
+    throttle_timer = 0
 end
 
 function task.preempt(entry)

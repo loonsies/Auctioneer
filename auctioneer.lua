@@ -1,5 +1,5 @@
 addon.name = 'Auctioneer'
-addon.version = "2.21"
+addon.version = '2.21'
 addon.author = 'Original addon by Ivaar, ported and modified by looney'
 addon.desc = 'Interact with auction house using commands.'
 addon.link = 'https://github.com/loonsies/auctioneer'
@@ -83,24 +83,11 @@ end)
 
 ashita.events.register('unload', 'unload_cb', function ()
     settings.save()
-
-    --if auctioneer.worker ~= nil then
-    --    print(chat.header(addon.name):append(chat.error('Thread is still running, allowing up to 10 seconds for graceful shutdown...')))
-    --    local waitResult = auctioneer.worker:wait(10 * 1000)
-
-    --    if waitResult == 0x102 then -- WAIT_TIMEOUT
-    --        print(chat.header(addon.name):append(chat.error('Thread was forcibly terminated due to exceeding the timeout')))
-    --    end
-
-    --    auctioneer.worker:close()
-    --    auctioneer.worker = nil
-    --end
 end)
 
 ashita.events.register('d3d_present', 'd3d_present_cb', function ()
     ui.update()
     ui.updateETA()
-    --ffxiah.pollWorker()
 end)
 
 ashita.events.register('command', 'command_cb', function (cmd, nType)

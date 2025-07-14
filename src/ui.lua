@@ -97,6 +97,7 @@ function ui.drawGlobalCommands()
 
     if imgui.Button('Stop', { stopWidth, 0 }) then
         task.clear()
+        auctioneer.eta = 0
     end
     imgui.SameLine()
     if imgui.Button('Open AH', { openAHWidth, 0 }) then
