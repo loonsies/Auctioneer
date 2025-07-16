@@ -1,4 +1,5 @@
 local itemIds = require('data/itemIds')
+local itemFlags = require('data/itemFlags')
 
 local itemUtils = {}
 
@@ -14,8 +15,9 @@ function itemUtils.load()
         local category = categoryLookup[id] or 0
         local item = AshitaCore:GetResourceManager():GetItemById(id)
         if item then
-            local isBazaarable = (bit.band(item.Flags, 0x4000) == 0)
-            local isAuctionable = isBazaarable and (bit.band(item.Flags, 0x40) == 0)
+            local isBazaarable = (bit.band(item.Flags, itemFlags.NoTradePC) == 0)
+            local isAuctionable = isBazaarable and (bit.band(item.Flags, itemFlags.NoAuction) == 0)
+            local isVendorable = (bit.band(item.Flags, itemFlags.NoSale) == 0)
 
             if item.Name[1] ~= '.' then -- Get rid of all the empty items
                 if not items[id] then
@@ -32,6 +34,7 @@ function itemUtils.load()
                 items[id].imageSize = item.ImageSize
                 items[id].isBazaarable = isBazaarable
                 items[id].isAuctionable = isAuctionable
+                items[id].isVendorable = isVendorable
             end
         end
     end

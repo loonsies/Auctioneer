@@ -11,7 +11,8 @@ local default = T {
     removeFailedBuyTasks = { true },
     searchFilters = { true },
     server = { 1 },
-    separateFFXIAH = { true }
+    separateFFXIAH = { true },
+    bellhopCommands = { true }
 }
 
 config.load = function ()

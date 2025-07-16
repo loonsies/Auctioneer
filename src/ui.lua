@@ -18,7 +18,7 @@ local tabTypes = require('data/tabTypes')
 
 local ui = {}
 
-local minSize = { 550, 400 }
+local minSize = { 575, 400 }
 local defaultSizeFFXIAH = { 600, 500 }
 local minSizeFFXIAH = { 400, 400 }
 local quantityInput = { 1 }
@@ -253,11 +253,23 @@ function ui.drawSearch()
     local currentTabName = tabTypes[auctioneer.currentTab]
 
     imgui.Text('Search (' .. #currentTab.results .. ')')
+
+    if auctioneer.currentTab ~= tabTypes.allItems then
+        if imgui.Button('Refresh##refreshInventory') then
+            inventory.update()
+            search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+        end
+        imgui.SameLine()
+    end
+
     imgui.SetNextItemWidth(-1)
     imgui.InputText('##SearchInput', currentTab.input, 48)
 
-    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 1, ImGuiTableFlags_ScrollY, { 0, 150 }) then
-        imgui.TableSetupColumn('##ItemColumn', ImGuiTableFlags_ScrollY)
+    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 3, ImGuiTableFlags_ScrollY, { 0, 150 }) then
+        local iconSize = 24
+        imgui.TableSetupColumn('##ItemIcon', ImGuiTableColumnFlags_WidthFixed)
+        imgui.TableSetupColumn('##ItemColumn', ImGuiTableColumnFlags_WidthStretch)
+        imgui.TableSetupColumn('##ItemFlag', ImGuiTableColumnFlags_WidthFixed)
 
         if currentTab.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
@@ -265,8 +277,7 @@ function ui.drawSearch()
 
             while clipper:Step() do
                 for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
-                    imgui.TableNextRow()
-                    imgui.TableSetColumnIndex(0)
+                    imgui.TableNextRow(nil, iconSize)
 
                     local itemEntry = currentTab.results[i + 1]
                     local itemId = itemEntry.id
@@ -274,16 +285,51 @@ function ui.drawSearch()
 
                     local isSelected = (currentTab.selectedItem == itemId)
                     local itemLabel = items[itemId].shortName
+                    local bitmap = items[itemId].bitmap
+                    local imageSize = items[itemId].imageSize
 
-                    if auctioneer.currentTab ~= tabTypes.allItems then
-                        itemLabel = string.format('%s %s', itemLabel, itemStack)
+                    imgui.TableSetColumnIndex(0)
+                    if itemId ~= nil and preview.textureCache[itemId] == nil then
+                        preview.textureCache[itemId] = utils.createTextureFromGame(bitmap, imageSize)
+                    end
+                    local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[itemId]))
+
+                    local iconClicked = false
+                    if iconPointer then
+                        imgui.PushID(i)
+                        if imgui.InvisibleButton('icon_btn', { iconSize, iconSize }) then
+                            iconClicked = true
+                        end
+                        local min_x, min_y = imgui.GetItemRectMin()
+                        local max_x, max_y = imgui.GetItemRectMax()
+                        imgui.GetWindowDrawList():AddImage(iconPointer, { min_x, min_y }, { max_x, max_y })
+                        imgui.PopID()
                     end
 
+                    imgui.TableSetColumnIndex(1)
+                    if auctioneer.currentTab ~= tabTypes.allItems then
+                        itemLabel = string.format('%s (%s)', itemLabel, itemStack)
+                    end
                     itemLabel = string.format('%s##%i', itemLabel, itemId)
+                    local labelClicked = imgui.Selectable(itemLabel, isSelected, nil, { 0, iconSize })
 
-                    if imgui.Selectable(itemLabel, isSelected) then
+                    if iconClicked or labelClicked then
                         currentTab.selectedItem = itemId
                     end
+
+                    imgui.TableSetColumnIndex(2)
+                    local flags = {}
+
+                    if not items[itemId].isAuctionable then
+                        table.insert(flags, 'NoAuction')
+                    elseif not items[itemId].isBazaarable then
+                        table.insert(flags, 'NoBazaar')
+                    elseif not items[itemId].isVendorable then
+                        table.insert(flags, 'NoVendor')
+                    end
+
+                    local flagsString = table.concat(flags, '/') or ''
+                    imgui.Text(flagsString)
                 end
             end
 
@@ -370,7 +416,7 @@ function ui.drawUtils()
     end
 end
 
-function ui.drawBuySellCommands()
+function ui.drawCommands()
     local iconSize = 20
 
     if gilIcon == nil then
@@ -457,6 +503,28 @@ function ui.drawBuySellCommands()
         end
     end
     imgui.SameLine()
+
+    if auctioneer.config.bellhopCommands[1] and auctioneer.currentTab == tabTypes.inventory and AshitaCore:GetPluginManager():Get('Bellhop') then
+        if imgui.Button('Bellhop Buy##bellhopBuy') then
+            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
+                print(chat.header(addon.name):append(chat.error('Please select an item')))
+            else
+                AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName, quantityInput[1]))
+                quantityInput = { 1 }
+            end
+        end
+        imgui.SameLine()
+
+        if imgui.Button('Bellhop Sell##bellhopSell') then
+            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
+                print(chat.header(addon.name):append(chat.error('Please select an item')))
+            else
+                AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName, quantityInput[1]))
+                quantityInput = { 1 }
+            end
+        end
+        imgui.SameLine()
+    end
 
     local spacing = 5
     local gilText = utils.commaValue(utils.getCurrentGils())
@@ -665,7 +733,7 @@ function ui.drawBuySellTab()
         ui.drawItemPreview()
     end
 
-    ui.drawBuySellCommands()
+    ui.drawCommands()
 
     imgui.Dummy({ 0, 0 })
 
@@ -755,6 +823,10 @@ function ui.drawSettingsTab()
 
     if imgui.Checkbox('Separate FFXIAH results in new windows', auctioneer.config.separateFFXIAH) then
         auctioneer.ffxiah.windows = {}
+        settings.save()
+    end
+
+    if imgui.Checkbox('Show bellhop commands', auctioneer.config.bellhopCommands) then
         settings.save()
     end
 end
