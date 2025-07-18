@@ -698,8 +698,14 @@ function ui.drawFFXIAH()
                 end)
             end
         end
+        imgui.SameLine()
     else
         imgui.Text('Fetching...')
+        imgui.SameLine()
+    end
+
+    if auctioneer.config.separateFFXIAH[1] and #auctioneer.ffxiah.windows > 0 and imgui.Button(string.format('Clear windows (%i)', #auctioneer.ffxiah.windows or 0)) then
+        auctioneer.ffxiah.windows = {}
     end
 
     if not auctioneer.config.separateFFXIAH[1] and auctioneer.ffxiah.windows[1] then
