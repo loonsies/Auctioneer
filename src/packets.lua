@@ -85,18 +85,14 @@ function packets.handleIncomingPacket(e)
         end
     elseif e.id == 0x01D then
         debounce(inventory.update)
-        ashita.tasks.oncef(10, function ()
-            search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
-        end)
+        debounce(search.update, auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
     elseif e.id == 0x01E then
         local flag = struct.unpack('i1', e.data, 0x04 + 1)
         local container = struct.unpack('i1', e.data, 0x05 + 1)
 
         if flag == 1 then
             debounce(inventory.update)
-            ashita.tasks.oncef(10, function ()
-                search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
-            end)
+            debounce(search.update, auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
         end
     end
 end
