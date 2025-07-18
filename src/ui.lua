@@ -668,31 +668,34 @@ function ui.drawFFXIAH()
                 print(chat.header(addon.name):append(chat.error('Please select an item')))
             else
                 auctioneer.ffxiah.fetching = true
-                ffxiah.fetch(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1])
 
-                local data = auctioneer.fetchResult
+                ashita.tasks.oncef(2, function ()
+                    ffxiah.fetch(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1])
 
-                auctioneer.fetchResult = nil
+                    local data = auctioneer.fetchResult
 
-                if data then
-                    local windowId = string.format('%i%i', data.itemId, os.time())
-                    if not auctioneer.ffxiah.windows[windowId] and (data.sales or data.bazaar) then
-                        table.insert(auctioneer.ffxiah.windows, {
-                            windowId = windowId,
-                            itemId = data.itemId,
-                            stack = data.stack,
-                            server = data.server,
-                            fetchedOn = os.time(),
-                            sales = data.sales,
-                            stock = data.stock,
-                            rate = data.rate,
-                            salesPerDay = data.salesPerDay,
-                            median = data.median,
-                            bazaar = data.bazaar
-                        })
+                    auctioneer.fetchResult = nil
+
+                    if data then
+                        local windowId = string.format('%i%i', data.itemId, os.time())
+                        if not auctioneer.ffxiah.windows[windowId] and (data.sales or data.bazaar) then
+                            table.insert(auctioneer.ffxiah.windows, {
+                                windowId = windowId,
+                                itemId = data.itemId,
+                                stack = data.stack,
+                                server = data.server,
+                                fetchedOn = os.time(),
+                                sales = data.sales,
+                                stock = data.stock,
+                                rate = data.rate,
+                                salesPerDay = data.salesPerDay,
+                                median = data.median,
+                                bazaar = data.bazaar
+                            })
+                        end
                     end
-                end
-                auctioneer.ffxiah.fetching = false
+                    auctioneer.ffxiah.fetching = false
+                end)
             end
         end
     else
