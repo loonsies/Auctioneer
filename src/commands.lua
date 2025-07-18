@@ -73,12 +73,6 @@ function commands.handleCommand(args)
     end
 
     if command == '/sell' or command == '/buy' or command == '/outbox' or command == '/obox' or command == '/inbox' or command == '/ibox' then
-        if not isInZone then
-            print(chat.header(addon.name):append(chat.error(
-                'You are not in an area that contains an auction house. Aborting')))
-            return false
-        end
-
         if command == '/sell' or command == '/buy' then
             return commands.handleBuySell(args, command)
         elseif command == '/outbox' or command == '/obox' then
@@ -101,6 +95,11 @@ function commands.handleCommand(args)
             elseif arg == 'clear' then
                 return commands.handleClearSales()
             elseif arg == 'menu' then
+                if not isInZone then
+                    print(chat.header(addon.name):append(chat.error('You are not in an area that contains an auction house. Aborting')))
+                    return false
+                end
+
                 return commands.handleOpenMenu()
             end
         end
