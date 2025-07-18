@@ -261,7 +261,7 @@ function ui.drawSearch()
     imgui.SetNextItemWidth(-1)
     imgui.InputText('##SearchInput', currentTab.input, 48)
 
-    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 3, ImGuiTableFlags_ScrollY, { 0, 150 }) then
+    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 2, ImGuiTableFlags_ScrollY, { 0, 150 }) then
         local iconSize = 24
         imgui.TableSetupColumn('##ItemIcon', ImGuiTableColumnFlags_WidthFixed)
         imgui.TableSetupColumn('##ItemColumn', ImGuiTableColumnFlags_WidthStretch)
@@ -303,24 +303,7 @@ function ui.drawSearch()
                         imgui.PopID()
                     end
 
-                    imgui.TableSetColumnIndex(1)
-                    if auctioneer.currentTab ~= tabTypes.allItems then
-                        itemLabel = string.format('%s (%s)', itemLabel, itemStack)
-                    end
-                    itemLabel = string.format('%s##%i', itemLabel, itemId)
-                    if index then
-                        itemLabel = string.format('%s-%i', itemLabel, index)
-                    end
-                    local labelClicked = imgui.Selectable(itemLabel, isSelected, nil, { 0, iconSize })
-
-                    if iconClicked or labelClicked then
-                        currentTab.selectedItem = itemId
-                        currentTab.selectedIndex = index
-                    end
-
-                    imgui.TableSetColumnIndex(2)
                     local flags = {}
-
                     if not items[itemId].isAuctionable then
                         table.insert(flags, 'NoAuction')
                     end
@@ -332,7 +315,40 @@ function ui.drawSearch()
                     end
 
                     local flagsString = table.concat(flags, '/') or ''
-                    imgui.Text(flagsString)
+
+                    imgui.TableSetColumnIndex(1)
+                    local baseLabel = itemLabel
+                    if auctioneer.currentTab ~= tabTypes.allItems then
+                        baseLabel = string.format('%s (%s)', items[itemId].shortName, itemStack)
+                    end
+                    baseLabel = string.format('%s##%i', baseLabel, itemId)
+                    if index then
+                        baseLabel = string.format('%s-%i', baseLabel, index)
+                    end
+
+                    local cellMinX = imgui.GetCursorPosX()
+                    local cellMinY = imgui.GetCursorPosY()
+                    local columnWidth = imgui.GetColumnWidth()
+
+                    local labelClicked = imgui.Selectable(baseLabel, isSelected, nil, { 0, iconSize })
+
+                    if flagsString ~= '' then
+                        local textWidth = select(1, imgui.CalcTextSize(flagsString))
+                        imgui.SetCursorPosX(cellMinX + columnWidth - textWidth - imgui.GetStyle().CellPadding.x)
+                        imgui.SetCursorPosY(cellMinY + (iconSize - imgui.GetFontSize()) * 0.5)
+                        local flagColor
+                        if isSelected or imgui.IsItemHovered() then
+                            flagColor = { 1.0, 1.0, 1.0, 1.0 }
+                        else
+                            flagColor = { 1.0, 0.3, 0.3, 1.0 }
+                        end
+                        imgui.TextColored(flagColor, flagsString)
+                    end
+
+                    if iconClicked or labelClicked then
+                        currentTab.selectedItem = itemId
+                        currentTab.selectedIndex = index
+                    end
                 end
             end
 
@@ -660,7 +676,7 @@ function ui.drawFFXIAH()
 
                 if data then
                     local windowId = string.format('%i%i', data.itemId, os.time())
-                    if not auctioneer.ffxiah.windows[windowId] then
+                    if not auctioneer.ffxiah.windows[windowId] and (data.sales or data.bazaar) then
                         table.insert(auctioneer.ffxiah.windows, {
                             windowId = windowId,
                             itemId = data.itemId,
