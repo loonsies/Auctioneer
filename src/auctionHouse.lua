@@ -63,9 +63,16 @@ function auctionHouse.sell(item, single, price)
     end
 
     local index = utils.findItem(item.Id, single == 1 and single or item.StackSize)
+
     if index == nil then
-        print(chat.header(addon.name):append(chat.error(string.format('%s of %s not found in inventory',
-            single == 1 and 'Single' or 'Stack', item.Name[1]))))
+        print(chat.header(addon.name):append(chat.error(string.format('%s of %s not found in inventory', single == 1 and 'Single' or 'Stack', item.Name[1]))))
+        return false
+    end
+
+    local isBazaarable = (bit.band(item.Flags, itemFlags.NoTradePC) == 0)
+    local isAuctionable = isBazaarable and (bit.band(item.Flags, itemFlags.NoAuction) == 0)
+    if not isAuctionable then
+        print(chat.header(addon.name):append(chat.error(string.format('%s is not auctionable', item.Name[1]))))
         return false
     end
 

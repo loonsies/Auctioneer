@@ -85,7 +85,7 @@ function packets.handleIncomingPacket(e)
         end
     elseif e.id == 0x01D then
         debounce(inventory.update)
-        ashita.tasks.once(1, function ()
+        ashita.tasks.oncef(10, function ()
             search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
         end)
     elseif e.id == 0x01E then
@@ -94,7 +94,7 @@ function packets.handleIncomingPacket(e)
 
         if flag == 1 then
             debounce(inventory.update)
-            ashita.tasks.once(1, function ()
+            ashita.tasks.oncef(10, function ()
                 search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
             end)
         end

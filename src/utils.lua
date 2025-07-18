@@ -3,6 +3,7 @@ local d3d8 = require('d3d8')
 local jobs = require('data/jobs')
 local salesRating = require('data/salesRating')
 local tabTypes = require('data/tabTypes')
+local itemFlags = require('data/itemFlags')
 
 local utils = {}
 
@@ -27,7 +28,8 @@ function utils.findItem(item_id, item_count)
     local items = AshitaCore:GetMemoryManager():GetInventory()
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
-        if item ~= nil and item.Id == item_id and item.Flags == 0 and item.Count >= item_count then
+
+        if item ~= nil and item.Id == item_id and item.Count >= item_count then
             return item.Index
         end
     end
