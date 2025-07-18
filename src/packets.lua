@@ -4,6 +4,7 @@ local task = require('src/task')
 local taskTypes = require('data/taskTypes')
 local inventory = require('src/inventory')
 local debounce = require('src/debounce')
+local search = require('src/search')
 
 local packets = {}
 
@@ -84,12 +85,18 @@ function packets.handleIncomingPacket(e)
         end
     elseif e.id == 0x01D then
         debounce(inventory.update)
+        ashita.tasks.once(1, function ()
+            search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+        end)
     elseif e.id == 0x01E then
         local flag = struct.unpack('i1', e.data, 0x04 + 1)
         local container = struct.unpack('i1', e.data, 0x05 + 1)
 
         if flag == 1 then
             debounce(inventory.update)
+            ashita.tasks.once(1, function ()
+                search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+            end)
         end
     end
 end

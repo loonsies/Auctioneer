@@ -81,7 +81,7 @@ function ffxiah.fetch(id, stack)
     local url = 'https://www.ffxiah.com/item/' .. tostring(id) .. '?stack=' .. stackParam
     local server = auctioneer.config.server[1]
 
-    auctioneer.workerResult = {
+    auctioneer.fetchResult = {
         itemId = id,
         stack = stack,
         server = server,
@@ -128,11 +128,11 @@ function ffxiah.fetch(id, stack)
         local median = response:match('<td>Median</td>%s*<td><span[^>]*>([%d,]+)</span>')
 
         if sales ~= nil and #sales > 0 then
-            auctioneer.workerResult.sales = sales
-            auctioneer.workerResult.stock = stock
-            auctioneer.workerResult.rate = rate
-            auctioneer.workerResult.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
-            auctioneer.workerResult.median = median
+            auctioneer.fetchResult.sales = sales
+            auctioneer.fetchResult.stock = stock
+            auctioneer.fetchResult.rate = rate
+            auctioneer.fetchResult.salesPerDay = utils.calcSalesRate(os.time(), sales[#sales].saleon, #sales)
+            auctioneer.fetchResult.median = median
         end
 
         local bazaar, err2 = handleJsonField(response, 'bazaar', id, function (bazaarTable)
@@ -162,7 +162,7 @@ function ffxiah.fetch(id, stack)
         end
 
         if #bazaar > 0 then
-            auctioneer.workerResult.bazaar = bazaar
+            auctioneer.fetchResult.bazaar = bazaar
         end
     end
 end

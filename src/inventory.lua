@@ -34,6 +34,7 @@ local function updateContainer(ctr, res, ctrId)
                 stack = nil,
                 stackCur = containerItem.Count,
                 stackMax = itemRes.StackSize,
+                index = containerItem.Index
             }
 
             if item.stackMax > 1 then

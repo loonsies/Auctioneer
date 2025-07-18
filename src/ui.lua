@@ -69,10 +69,6 @@ function ui.update()
             tabObj.previousLvMaxInput = { lvMaxInput }
             tabObj.previousJobSelected = { selectedJobs }
         end
-
-        if tabObj.selectedItem ~= tabObj.previousSelectedItem then
-            tabObj.previousSelectedItem = tabObj.selectedItem
-        end
     end
 
     ui.drawUI()
@@ -282,8 +278,9 @@ function ui.drawSearch()
                     local itemEntry = currentTab.results[i + 1]
                     local itemId = itemEntry.id
                     local itemStack = itemEntry.stack
+                    local index = itemEntry.index
 
-                    local isSelected = (currentTab.selectedItem == itemId)
+                    local isSelected = (currentTab.selectedItem == itemId and currentTab.selectedIndex == index)
                     local itemLabel = items[itemId].shortName
                     local bitmap = items[itemId].bitmap
                     local imageSize = items[itemId].imageSize
@@ -311,10 +308,14 @@ function ui.drawSearch()
                         itemLabel = string.format('%s (%s)', itemLabel, itemStack)
                     end
                     itemLabel = string.format('%s##%i', itemLabel, itemId)
+                    if index then
+                        itemLabel = string.format('%s-%i', itemLabel, index)
+                    end
                     local labelClicked = imgui.Selectable(itemLabel, isSelected, nil, { 0, iconSize })
 
                     if iconClicked or labelClicked then
                         currentTab.selectedItem = itemId
+                        currentTab.selectedIndex = index
                     end
 
                     imgui.TableSetColumnIndex(2)
@@ -322,9 +323,11 @@ function ui.drawSearch()
 
                     if not items[itemId].isAuctionable then
                         table.insert(flags, 'NoAuction')
-                    elseif not items[itemId].isBazaarable then
+                    end
+                    if not items[itemId].isBazaarable then
                         table.insert(flags, 'NoBazaar')
-                    elseif not items[itemId].isVendorable then
+                    end
+                    if not items[itemId].isVendorable then
                         table.insert(flags, 'NoVendor')
                     end
 
@@ -526,6 +529,15 @@ function ui.drawCommands()
         imgui.SameLine()
     end
 
+    if auctioneer.currentTab ~= tabTypes.allItems then
+        if imgui.Button('Max##max') then
+            if auctioneer.tabs[auctioneer.currentTab].selectedItem and items[auctioneer.tabs[auctioneer.currentTab].selectedItem] then
+                quantityInput = { utils.getCurrentStack() }
+            end
+        end
+        imgui.SameLine()
+    end
+
     local spacing = 5
     local gilText = utils.commaValue(utils.getCurrentGils())
     local textWidth = imgui.CalcTextSize(gilText)
@@ -642,9 +654,9 @@ function ui.drawFFXIAH()
                 auctioneer.ffxiah.fetching = true
                 ffxiah.fetch(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1])
 
-                local data = auctioneer.workerResult
+                local data = auctioneer.fetchResult
 
-                auctioneer.workerResult = nil
+                auctioneer.fetchResult = nil
 
                 if data then
                     local windowId = string.format('%i%i', data.itemId, os.time())

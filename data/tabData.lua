@@ -14,7 +14,7 @@ local function new()
         previousJobSelected = {},
         status = searchStatus and searchStatus.noResults or 0,
         selectedItem = nil,
-        previousSelectedItem = nil,
+        selectedIndex = nil,
         showAllItems = { false },
         startup = true
     }

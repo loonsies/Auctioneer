@@ -15,6 +15,7 @@ local ui = require('src/ui')
 local packets = require('src/packets')
 local itemUtils = require('src/itemUtils')
 local inventory = require('src/inventory')
+local search = require('src/search')
 
 -- Data
 local tabData = require('data/tabData')
@@ -41,8 +42,7 @@ auctioneer = {
     currentTab = tabTypes.allItems,
     eta = 0,
     lastUpdateTime = os.clock(),
-    worker = nil,
-    workerResult = nil,
+    fetchResult = nil,
     zoning = false,
     containers = inventory.new()
 }
@@ -50,10 +50,12 @@ auctioneer = {
 ashita.events.register('load', 'load_cb', function ()
     auctioneer.config = config.load()
     inventory.update()
+    search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
 
     settings.register('settings', 'settings_update_cb', function (newConfig)
         auctioneer.config = newConfig
         inventory.update()
+        search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
     end)
 end)
 

@@ -2,6 +2,7 @@ local ffi = require('ffi')
 local d3d8 = require('d3d8')
 local jobs = require('data/jobs')
 local salesRating = require('data/salesRating')
+local tabTypes = require('data/tabTypes')
 
 local utils = {}
 
@@ -240,6 +241,49 @@ function utils.findCommonElements(table1, table2)
     end
 
     return commonTable
+end
+
+function utils.validateSelection(tabType, tab)
+    if not tab.selectedItem then
+        return
+    end
+
+    local found = false
+    for _, entry in ipairs(tab.results) do
+        if tabType == tabTypes.allItems then
+            if entry.id == tab.selectedItem then
+                found = true
+                break
+            end
+        else
+            if entry.id == tab.selectedItem and entry.index == tab.selectedIndex then
+                found = true
+                break
+            end
+        end
+    end
+    if not found then
+        tab.selectedItem = nil
+        tab.selectedIndex = nil
+    end
+end
+
+function utils.getCurrentStack()
+    local currentTab = auctioneer.tabs[auctioneer.currentTab]
+    local index = currentTab.selectedIndex
+    local results = currentTab.results
+
+    if not currentTab or not results or not index then
+        return nil
+    end
+
+    for i, entry in pairs(results) do
+        if entry.index == index then
+            return entry.stackCur
+        end
+    end
+
+    return nil
 end
 
 return utils
