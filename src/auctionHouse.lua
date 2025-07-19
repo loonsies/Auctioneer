@@ -69,8 +69,8 @@ function auctionHouse.sell(item, single, price)
         return false
     end
 
-    local isBazaarable = (bit.band(item.Flags, itemFlags.NoTradePC) == 0)
-    local isAuctionable = isBazaarable and (bit.band(item.Flags, itemFlags.NoAuction) == 0)
+    local isBazaarable = not utils.hasFlag(item.Flags, itemFlags.NoTradePC)
+    local isAuctionable = isBazaarable and not utils.hasFlag(item.Flags, itemFlags.NoAuction)
     if not isAuctionable then
         print(chat.header(addon.name):append(chat.error(string.format('%s is not auctionable', item.Name[1]))))
         return false
@@ -161,9 +161,8 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
         return false
     end
 
-    if utils.hasFlag(item.Flags, itemFlags['NoAuction']) == true then
-        print(chat.header(addon.name):append(chat.error(string.format(
-            '%s is not purchasable via the auction house.', item.Name[1]))))
+    if utils.hasFlag(item.Flags, itemFlags.NoAuction) == true then
+        print(chat.header(addon.name):append(chat.error(string.format('%s is not purchasable via the auction house.', item.Name[1]))))
         return false
     end
 
