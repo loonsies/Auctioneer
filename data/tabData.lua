@@ -15,7 +15,6 @@ local function new()
         status = searchStatus and searchStatus.noResults or 0,
         selectedItem = nil,
         selectedIndex = nil,
-        showAllItems = { false },
         startup = true
     }
 end

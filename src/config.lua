@@ -12,7 +12,24 @@ local default = T {
     searchFilters = { true },
     server = { 1 },
     separateFFXIAH = { true },
-    bellhopCommands = { true }
+    bellhopCommands = { true },
+    tabs = {
+        [1] = {
+            showAllItems = { false }
+        },
+        [2] = {
+            showAllItems = { false }
+        },
+        [3] = {
+            showAllItems = { false }
+        },
+        [4] = {
+            showAllItems = { false }
+        },
+        [5] = {
+            showAllItems = { false }
+        }
+    }
 }
 
 config.load = function ()

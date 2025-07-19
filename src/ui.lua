@@ -202,7 +202,7 @@ function ui.drawFilters()
     end
     imgui.SameLine()
 
-    if imgui.Checkbox('Show all items', auctioneer.tabs[auctioneer.currentTab].showAllItems) then
+    if imgui.Checkbox('Show all items', auctioneer.config.tabs[auctioneer.currentTab].showAllItems) then
         search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
     end
     imgui.ShowHelp('Displays all items, even those who are not auctionable/bazaarable', true)

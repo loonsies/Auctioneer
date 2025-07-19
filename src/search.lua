@@ -25,7 +25,7 @@ function search.update(tabType, tab)
 
         local itemData = items[itemId]
 
-        if (itemData.isBazaarable or itemData.isAuctionable or tab.showAllItems[1]) then
+        if (itemData.isBazaarable or itemData.isAuctionable or auctioneer.config.tabs[tabType].showAllItems[1]) then
             if tab.category == 999 or tab.category == itemData.category then
                 if itemData.longName and string.find(itemData.longName:lower(), input:lower(), 1, true) or itemData.shortName and
                     string.find(itemData.shortName:lower(), input:lower(), 1, true) then
