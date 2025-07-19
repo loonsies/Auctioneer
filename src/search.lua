@@ -21,7 +21,6 @@ function search.update(tabType, tab)
             index = item.index
             stackCur = item.stackCur
             stackMax = item.stackMax
-            price = item.price
         end
 
         local itemData = items[itemId]
@@ -36,14 +35,14 @@ function search.update(tabType, tab)
                                 local itemJobs = utils.getJobs(itemData.jobs)
                                 local common = utils.findCommonElements(itemJobs, tab.jobSelected)
                                 if #common > 0 or jobs[1] == 999 then
-                                    table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax, price = price })
+                                    table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax })
                                 end
                             else
-                                table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax, price = price })
+                                table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax })
                             end
                         end
                     else
-                        table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax, price = price })
+                        table.insert(tab.results, { id = itemId, index = index, stack = itemStack, stackCur = stackCur, stackMax = stackMax })
                     end
                 end
             end

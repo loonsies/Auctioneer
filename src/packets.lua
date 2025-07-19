@@ -78,6 +78,8 @@ function packets.handleIncomingPacket(e)
     elseif e.id == 0x000B then
         task.clear()
         auctioneer.eta = 0
+        auctioneer.auctionHouse = {}
+        auctioneer.auctionHouseInitialized = false
 
         if auctioneer.visible[1] then
             auctioneer.visible[1] = false

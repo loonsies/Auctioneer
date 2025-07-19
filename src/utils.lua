@@ -29,7 +29,7 @@ function utils.findItem(item_id, item_count)
     for ind = 1, items:GetContainerCountMax(0) do
         local item = items:GetContainerItem(0, ind)
 
-        if item ~= nil and item.Id == item_id and item.Count >= item_count then
+        if item ~= nil and item.Id == item_id and item.Count >= item_count and item.Price == 0 then
             return item.Index
         end
     end
