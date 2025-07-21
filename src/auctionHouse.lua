@@ -41,8 +41,7 @@ function auctionHouse.buy(item, single, price)
 
     local slot = auctionHouse.findEmptySlot() == nil and 0x07 or auctionHouse.findEmptySlot()
     local trans = struct.pack('bbxxihxx', 0x0E, slot, price, item.Id)
-    local log = string.format('Sending buy packet: "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price),
-        single == 1 and '[Single]' or '[Stack]', item.Id)
+    local log = string.format('Sending buy packet: "%s" %s %s ID:%s', item.Name[1], utils.commaValue(price), single == 1 and '[Single]' or '[Stack]', item.Id)
     trans = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('bi32i11', single, 0x00, 0x00)
     local packet = trans:totable()
 
@@ -77,8 +76,7 @@ function auctionHouse.sell(item, single, price)
     end
 
     local trans = struct.pack('bxxxihh', 0x04, price, index, item.Id)
-    local log = string.format('Sending sell packet: "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price),
-        single == 1 and '[Single]' or '[Stack]', item.Id, index)
+    local log = string.format('Sending sell packet: "%s" %s %s ID:%d Ind:%d', item.Name[1], utils.commaValue(price), single == 1 and '[Single]' or '[Stack]', item.Id, index)
     trans = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('bi32i11', single, 0x00, 0x00)
     last4E = trans
     local packet = trans:totable()
@@ -90,14 +88,40 @@ end
 
 function auctionHouse.sendConfirmSell(packet, id, name, single)
     if packet ~= nil then
-        local log = string.format('Sending confirm sell packet: "%s" %s ID:%s', name,
-            single == 1 and '[Single]' or '[Stack]', id)
+        local log = string.format('Sending confirm sell packet: "%s" %s ID:%s', name, single == 1 and '[Single]' or '[Stack]', id)
 
         print(chat.header(addon.name):append(chat.color2(200, log)))
         AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
         return true
     end
     return false
+end
+
+function auctionHouse.salesStatus()
+    if auctioneer.auctionHouse == nil then
+        print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu to initialize sales')))
+        return false
+    end
+
+    local entry = {
+        type = taskTypes.salesStatus
+    }
+    task.enqueue(entry)
+    return true
+end
+
+function auctionHouse.sendSalesStatus()
+    if auctioneer.auctionHouse == nil then
+        print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
+        return false
+    end
+
+    local trans = struct.pack('bxxx', 0x05)
+    local packet = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('i32i11', 0, 0)
+
+    print(chat.header(addon.name):append(chat.color2(200, 'Sending sales status packet')))
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet:totable())
+    return true
 end
 
 function auctionHouse.findEmptySlot()
@@ -113,8 +137,7 @@ end
 
 function auctionHouse.clearSales()
     if auctioneer.auctionHouse == nil then
-        print(chat.header(addon.name):append(chat.error(
-            'Interact with auction house or use /ah menu to initialize sales')))
+        print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu to initialize sales')))
         return false
     end
     for slot = 0, 6 do
@@ -191,18 +214,13 @@ function auctionHouse.proposal(action, itemName, single, price, quantity)
     price = tonumber(price)
 
     local entry = {
-        type = action == auctionHouseActions.buy and taskTypes.buy or auctionHouseActions.sell,
+        type = action == auctionHouseActions.buy and taskTypes.buy or taskTypes.sell,
         item = item,
         single = single,
         price = price
     }
 
-    if action == auctionHouseActions.buy then
-        for i = 1, quantity do
-            task.enqueue(entry)
-        end
-        return true
-    elseif action == auctionHouseActions.sell then
+    if action == auctionHouseActions.buy or action == auctionHouseActions.sell then
         for i = 1, quantity do
             task.enqueue(entry)
         end

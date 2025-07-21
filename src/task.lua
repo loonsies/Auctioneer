@@ -27,6 +27,10 @@ local function handleEntry(entry)
         if auctionHouse.clearSlot(entry.slot) then
             throttle_timer = os.clock() + throttle_interval
         end
+    elseif entry.type == taskTypes.salesStatus then
+        if auctionHouse.sendSalesStatus() then
+            throttle_timer = os.clock() + throttle_interval
+        end
     else
         print(chat.header(addon.name):append(chat.error('Invalid task type')))
     end
