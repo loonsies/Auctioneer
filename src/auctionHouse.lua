@@ -45,6 +45,7 @@ function auctionHouse.buy(item, single, price)
     trans = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('bi32i11', single, 0x00, 0x00)
     local packet = trans:totable()
 
+    print(('Packet size: %d bytes'):format(#trans))
     print(chat.header(addon.name):append(chat.color2(200, log)))
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
     return true
@@ -116,9 +117,13 @@ function auctionHouse.sendSalesStatus()
         return false
     end
 
-    local trans = struct.pack('bxxx', 0x05)
-    local packet = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('i32i11', 0, 0)
+    local header = struct.pack('bbxx', 0x4E, 0x1E)
+    local cmd    = struct.pack('bxxx', 0x05)
+    local pad    = struct.pack('i32i20', 0x00, 0x00)
 
+    local packet = header .. cmd .. pad
+
+    print(#pad) -- both print 52, BUT their binary layouts differ!
     print(chat.header(addon.name):append(chat.color2(200, 'Sending sales status packet')))
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet:totable())
     return true
