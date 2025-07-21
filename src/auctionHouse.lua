@@ -123,7 +123,6 @@ function auctionHouse.sendSalesStatus()
 
     local packet = header .. cmd .. pad
 
-    print(#pad) -- both print 52, BUT their binary layouts differ!
     print(chat.header(addon.name):append(chat.color2(200, 'Sending sales status packet')))
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet:totable())
     return true
