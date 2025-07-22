@@ -45,7 +45,6 @@ function auctionHouse.buy(item, single, price)
     trans = struct.pack('bbxx', 0x4E, 0x1E) .. trans .. struct.pack('bi32i11', single, 0x00, 0x00)
     local packet = trans:totable()
 
-    print(('Packet size: %d bytes'):format(#trans))
     print(chat.header(addon.name):append(chat.color2(200, log)))
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x4E, packet)
     return true
@@ -118,8 +117,8 @@ function auctionHouse.sendSalesStatus()
     end
 
     local header = struct.pack('bbxx', 0x4E, 0x1E)
-    local cmd    = struct.pack('bxxx', 0x05)
-    local pad    = struct.pack('i32i20', 0x00, 0x00)
+    local cmd = struct.pack('bxxx', 0x05)
+    local pad = struct.pack('i32i20', 0x00, 0x00)
 
     local packet = header .. cmd .. pad
 
