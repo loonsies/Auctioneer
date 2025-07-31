@@ -6,6 +6,7 @@ local auctionHouseActions = require('data/auctionHouseActions')
 local itemFlags = require('data/itemFlags')
 
 local auctionHouse = {}
+local maxSalesStatusAttempts = 10
 
 function auctionHouse.updateAuctionHouse(packet)
     local slot = packet:byte(0x05 + 1)
@@ -103,17 +104,34 @@ function auctionHouse.salesStatus()
         return false
     end
 
+    print(chat.header(addon.name):append(chat.warning('Waiting for AH menu to send sales status packet...')))
     local entry = {
-        type = taskTypes.salesStatus
+        type = taskTypes.salesStatus,
+        attempts = 0
     }
     task.enqueue(entry)
     return true
 end
 
-function auctionHouse.sendSalesStatus()
+function auctionHouse.sendSalesStatus(attempts)
     if auctioneer.auctionHouse == nil then
         print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         return false
+    end
+
+    if auctioneer.auctionHouseInitialized == false then
+        if attempts < maxSalesStatusAttempts then
+            local entry = {
+                type = taskTypes.salesStatus,
+                attempts = attempts + 1
+            }
+
+            task.enqueue(entry) -- Requeue sales status packet until we auction house is initialized or max attempts is reached
+            return
+        else
+            print(chat.header(addon.name):append(chat.error('Maximum of attempts to send sales status reached, try reopening the menu')))
+            return
+        end
     end
 
     local header = struct.pack('bbxx', 0x4E, 0x1E)

@@ -5,31 +5,32 @@ local taskTypes = require('data/taskTypes')
 local task = {}
 
 local queue = {}
-local throttle_timer = 0
-local throttle_interval = 8
+local throttleTimer = 0
+local throttleInterval = 8
+local throttleSalesStatusInterval = 2
 
 local function handleEntry(entry)
     local auctionHouse = require('src/auctionHouse')
 
     if entry.type == taskTypes.buy then
         if auctionHouse.buy(entry.item, entry.single, entry.price) then
-            throttle_timer = os.clock() + throttle_interval
+            throttleTimer = os.clock() + throttleInterval
         end
     elseif entry.type == taskTypes.sell then
         if auctionHouse.sell(entry.item, entry.single, entry.price) then
-            throttle_timer = os.clock() + throttle_interval
+            throttleTimer = os.clock() + throttleInterval
         end
     elseif entry.type == taskTypes.confirmSell then
         if auctionHouse.sendConfirmSell(entry.packet, entry.id, entry.name, entry.single) then
-            throttle_timer = os.clock() + throttle_interval
+            throttleTimer = os.clock() + throttleInterval
         end
     elseif entry.type == taskTypes.clearSlot then
         if auctionHouse.clearSlot(entry.slot) then
-            throttle_timer = os.clock() + throttle_interval
+            throttleTimer = os.clock() + throttleInterval
         end
     elseif entry.type == taskTypes.salesStatus then
-        if auctionHouse.sendSalesStatus() then
-            throttle_timer = os.clock() + throttle_interval
+        if auctionHouse.sendSalesStatus(entry.attempts) then
+            throttleTimer = os.clock() + throttleSalesStatusInterval
         end
     else
         print(chat.header(addon.name):append(chat.error('Invalid task type')))
@@ -37,7 +38,7 @@ local function handleEntry(entry)
 end
 
 local function handleQueue()
-    while #queue > 0 and os.clock() > throttle_timer do
+    while #queue > 0 and os.clock() > throttleTimer do
         handleEntry(queue[1])
         table.remove(queue, 1)
     end
@@ -49,28 +50,28 @@ function task.clear()
     end
 
     queue = {}
-    throttle_timer = 0
+    throttleTimer = 0
 end
 
 function task.preempt(entry)
     local action = #queue > 0 and 'prioritized' or 'throttled'
-    throttle_timer = os.clock() + throttle_interval
-    auctioneer.eta = (auctioneer.eta or 0) + throttle_interval
+    throttleTimer = os.clock() + throttleInterval
+    auctioneer.eta = (auctioneer.eta or 0) + throttleInterval
     table.insert(queue, 1, entry)
     print(chat.header(addon.name):append(chat.warning(
         string.format('%s task %s, will run after %.2f seconds',
-            taskTypes[entry.type], action, throttle_interval)
+            taskTypes[entry.type], action, throttleInterval)
     )))
 end
 
 function task.enqueue(entry)
     local queueSize = #queue
-    if queueSize == 0 and os.clock() > throttle_timer then
+    if queueSize == 0 and os.clock() > throttleTimer then
         handleEntry(entry)
     else
-        auctioneer.eta = (auctioneer.eta or 0) + throttle_interval
+        auctioneer.eta = (auctioneer.eta or 0) + throttleInterval
         queue[queueSize + 1] = entry
-        local delay = (throttle_interval * queueSize) + (throttle_timer - os.clock())
+        local delay = (throttleInterval * queueSize) + (throttleTimer - os.clock())
         print(chat.header(addon.name):append(chat.warning(
             string.format('%s task throttled, will run in %.2f seconds (queue position %d)', taskTypes[entry.type],
                 delay,
@@ -95,9 +96,9 @@ function task.filter(entry)
 
     local queueSize = #queue
     if doReset and queueSize > 0 then
-        throttle_timer = os.clock() + throttle_interval
-        auctioneer.eta = throttle_interval * queueSize
-        local delay = (throttle_interval * queueSize) + (throttle_timer - os.clock())
+        throttleTimer = os.clock() + throttleInterval
+        auctioneer.eta = throttleInterval * queueSize
+        local delay = (throttleInterval * queueSize) + (throttleTimer - os.clock())
         print(chat.header(addon.name):append(chat.warning(string.format('Queue timer set to %.2f seconds', delay))))
     end
 end
