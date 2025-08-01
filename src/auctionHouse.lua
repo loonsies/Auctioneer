@@ -107,7 +107,9 @@ function auctionHouse.salesStatus()
     print(chat.header(addon.name):append(chat.warning('Waiting for AH menu to send sales status packet...')))
     local entry = {
         type = taskTypes.salesStatus,
-        attempts = 0
+        attempts = 0,
+        interval = 1,
+        silent = true
     }
     task.enqueue(entry)
     return true
@@ -123,14 +125,16 @@ function auctionHouse.sendSalesStatus(attempts)
         if attempts < maxSalesStatusAttempts then
             local entry = {
                 type = taskTypes.salesStatus,
-                attempts = attempts + 1
+                attempts = attempts + 1,
+                interval = 1,
+                silent = true
             }
 
-            task.enqueue(entry) -- Requeue sales status packet until we auction house is initialized or max attempts is reached
-            return
+            task.enqueue(entry)
+            return true
         else
             print(chat.header(addon.name):append(chat.error('Maximum of attempts to send sales status reached, try reopening the menu')))
-            return
+            return false
         end
     end
 
