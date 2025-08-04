@@ -416,11 +416,11 @@ function ui.drawUtils()
         if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         else
-            local shortName = (items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName)
+            local shortName = (items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName) or items[auctioneer.tabs[auctioneer.currentTab].selectedItem].longName
             shortName = string.gsub(shortName, ' ', '_')
-            local cmd = string.format('start "" "https://bg-wiki.com/ffxi/%s"', shortName)
+            local url = string.format('https://bg-wiki.com/ffxi/%s', shortName)
 
-            os.execute(cmd)
+            ashita.misc.execute('explorer', url)
         end
     end
     imgui.SameLine()
@@ -429,8 +429,8 @@ function ui.drawUtils()
         if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         else
-            local cmd = string.format('start "" "https://www.ffxiah.com/item/%i?stack=%i"', auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1] and 1 or 0)
-            os.execute(cmd)
+            local url = string.format('https://www.ffxiah.com/item/%i?stack=%i', auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1] and 1 or 0)
+            ashita.misc.execute('explorer', url)
         end
     end
 end
