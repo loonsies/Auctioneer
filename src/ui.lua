@@ -292,6 +292,23 @@ function ui.drawSearch()
                     local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[itemId]))
 
                     local iconClicked = false
+                    -- Bellhop selection checkbox (inventory tab only, when enabled)
+                    local showBhCheckbox = auctioneer.config.bellhopCommands[1]
+                        and auctioneer.currentTab == tabTypes.inventory
+                        and AshitaCore:GetPluginManager():Get('Bellhop')
+                    if showBhCheckbox then
+                        auctioneer.tabs[auctioneer.currentTab].bhChecked = auctioneer.tabs[auctioneer.currentTab].bhChecked or {}
+                        local key = tostring(itemId) .. ':' .. tostring(index or 0)
+                        local checkedTbl = { auctioneer.tabs[auctioneer.currentTab].bhChecked[key] == true }
+                        imgui.PushID('bhchk' .. i)
+                        if imgui.Checkbox('##bhchk', checkedTbl) then
+                            -- store true or nil to keep the table compact
+                            auctioneer.tabs[auctioneer.currentTab].bhChecked[key] = checkedTbl[1] or nil
+                        end
+                        imgui.PopID()
+                        imgui.SameLine()
+                    end
+
                     if iconPointer then
                         imgui.PushID(i)
                         if imgui.InvisibleButton('icon_btn', { iconSize, iconSize }) then
@@ -525,20 +542,54 @@ function ui.drawCommands()
 
     if auctioneer.config.bellhopCommands[1] and auctioneer.currentTab == tabTypes.inventory and AshitaCore:GetPluginManager():Get('Bellhop') then
         if imgui.Button('Bellhop Buy##bellhopBuy') then
-            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
-                print(chat.header(addon.name):append(chat.error('Please select an item')))
-            else
-                AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName, quantityInput[1]))
+            local tab = auctioneer.tabs[auctioneer.currentTab]
+            local queued = 0
+            if tab.bhChecked then
+                for _, entry in ipairs(tab.results) do
+                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                    if tab.bhChecked[key] then
+                        local name = items[entry.id].shortName
+                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', name, quantityInput[1]))
+                        queued = queued + 1
+                    end
+                end
+            end
+            if queued == 0 then
+                if tab.selectedItem == nil then
+                    print(chat.header(addon.name):append(chat.error('Please select an item')))
+                else
+                    AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
+                    queued = 1
+                end
+            end
+            if queued > 0 then
                 quantityInput = { 1 }
             end
         end
         imgui.SameLine()
 
         if imgui.Button('Bellhop Sell##bellhopSell') then
-            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
-                print(chat.header(addon.name):append(chat.error('Please select an item')))
-            else
-                AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName, quantityInput[1]))
+            local tab = auctioneer.tabs[auctioneer.currentTab]
+            local queued = 0
+            if tab.bhChecked then
+                for _, entry in ipairs(tab.results) do
+                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                    if tab.bhChecked[key] then
+                        local name = items[entry.id].shortName
+                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', name, quantityInput[1]))
+                        queued = queued + 1
+                    end
+                end
+            end
+            if queued == 0 then
+                if tab.selectedItem == nil then
+                    print(chat.header(addon.name):append(chat.error('Please select an item')))
+                else
+                    AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
+                    queued = 1
+                end
+            end
+            if queued > 0 then
                 quantityInput = { 1 }
             end
         end
