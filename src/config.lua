@@ -13,6 +13,7 @@ local default = T {
     server = { 1 },
     separateFFXIAH = { true },
     bellhopCommands = { true },
+    dropButton = { false },
     tabs = {
         [1] = {
             showAllItems = { false }

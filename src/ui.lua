@@ -9,6 +9,7 @@ local commands = require('src/commands')
 local utils = require('src/utils')
 local ffxiah = require('src/ffxiah')
 local inventory = require('src/inventory')
+local packets = require('src/packets')
 local categories = require('data/categories')
 local auctionHouseActions = require('data/auctionHouseActions')
 local jobs = require('data/jobs')
@@ -596,6 +597,46 @@ function ui.drawCommands()
         imgui.SameLine()
     end
 
+    if auctioneer.config.dropButton[1] and auctioneer.currentTab == tabTypes.inventory then
+        if imgui.Button('Drop##dropItems') then
+            local tab = auctioneer.tabs[auctioneer.currentTab]
+            local dropped = 0
+
+            if tab.bhChecked then
+                for _, entry in ipairs(tab.results) do
+                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                    if tab.bhChecked[key] and entry.index then
+                        local name = items[entry.id].shortName
+                        if packets.dropItemBySlot(entry.index, entry.stackCur) then
+                            print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, entry.index))))
+                            dropped = dropped + 1
+                        end
+                    end
+                end
+            end
+
+            if dropped == 0 then
+                if tab.selectedItem == nil or tab.selectedIndex == nil then
+                    print(chat.header(addon.name):append(chat.error('Please select an item or check items to drop')))
+                else
+                    local name = items[tab.selectedItem].shortName
+                    local selectedEntry = nil
+                    for _, entry in ipairs(tab.results) do
+                        if entry.id == tab.selectedItem and entry.index == tab.selectedIndex then
+                            selectedEntry = entry
+                            break
+                        end
+                    end
+
+                    if selectedEntry and packets.dropItemBySlot(selectedEntry.index, selectedEntry.stackCur) then
+                        print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, selectedEntry.index))))
+                    end
+                end
+            end
+        end
+        imgui.SameLine()
+    end
+
     if auctioneer.currentTab ~= tabTypes.allItems then
         if imgui.Button('Max##max') then
             if auctioneer.tabs[auctioneer.currentTab].selectedItem and items[auctioneer.tabs[auctioneer.currentTab].selectedItem] then
@@ -915,6 +956,10 @@ function ui.drawSettingsTab()
     end
 
     if imgui.Checkbox('Show bellhop commands', auctioneer.config.bellhopCommands) then
+        settings.save()
+    end
+
+    if imgui.Checkbox('Show drop button', auctioneer.config.dropButton) then
         settings.save()
     end
 end

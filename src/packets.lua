@@ -8,6 +8,21 @@ local search = require('src/search')
 
 local packets = {}
 
+function packets.dropItemBySlot(slot, quantity)
+    if slot == nil or quantity == nil then
+        return false
+    end
+
+    local qty = tonumber(quantity)
+    if qty == nil or qty <= 0 then
+        return false
+    end
+
+    local dropPacket = struct.pack('IIBB', 0, qty, 0, slot):totable()
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x028, dropPacket)
+    return true
+end
+
 function packets.handleIncomingPacket(e)
     if e.id == 0x04C then
         local pType = e.data:byte(5)
