@@ -168,7 +168,6 @@ function mogGarden.update()
                         isNew = false
                     }
                 end
-                print(chat.header(addon.name):append(chat.message(string.format('Item increased: %s (+%d)', items[item.Id].shortName, newCount))))
 
                 snapshot.count = item.Count
             end
