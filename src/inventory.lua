@@ -237,6 +237,8 @@ function inventory.getItemSet(tabType)
         itemSet = auctioneer.containers.wardrobes.all
     elseif tabType == tabTypes.house then
         itemSet = auctioneer.containers.house.all
+    elseif tabType == tabTypes.mogGarden then
+        itemSet = auctioneer.mogGarden.newItems
     end
 
     return itemSet

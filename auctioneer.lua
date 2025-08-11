@@ -1,5 +1,5 @@
 addon.name = 'Auctioneer'
-addon.version = "2.26"
+addon.version = '2.26'
 addon.author = 'Original addon by Ivaar, ported and modified by looney'
 addon.desc = 'Interact with auction house using commands.'
 addon.link = 'https://github.com/loonsies/auctioneer'
@@ -7,6 +7,7 @@ addon.link = 'https://github.com/loonsies/auctioneer'
 -- Ashita dependencies
 require 'common'
 local settings = require('settings')
+local chat = require('chat')
 
 -- Local dependencies
 local commands = require('src/commands')
@@ -16,6 +17,7 @@ local packets = require('src/packets')
 local itemUtils = require('src/itemUtils')
 local inventory = require('src/inventory')
 local search = require('src/search')
+local mogGarden = require('src/mogGarden')
 
 -- Data
 local tabData = require('data/tabData')
@@ -37,7 +39,8 @@ auctioneer = {
         [2] = tabData.new(),
         [3] = tabData.new(),
         [4] = tabData.new(),
-        [5] = tabData.new()
+        [5] = tabData.new(),
+        [6] = tabData.new()
     },
     currentTab = tabTypes.allItems,
     eta = 0,
@@ -51,6 +54,12 @@ ashita.events.register('load', 'load_cb', function ()
     auctioneer.config = config.load()
     inventory.update()
     search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+
+    -- Initialize Mog Garden module
+    mogGarden.init()
+
+    -- Check if we're already in Mog Garden when addon loads
+    mogGarden.update()
 
     settings.register('settings', 'settings_update_cb', function (newConfig)
         auctioneer.config = newConfig
@@ -66,6 +75,7 @@ end)
 ashita.events.register('d3d_present', 'd3d_present_cb', function ()
     ui.update()
     ui.updateETA()
+    mogGarden.update()
 end)
 
 ashita.events.register('command', 'command_cb', function (cmd, nType)

@@ -15,17 +15,34 @@ function search.update(tabType, tab)
         local itemId = id
         local itemStack = '0/0'
         local index = nil
+        local stackCur = nil
+        local stackMax = nil
+
         if tabType ~= tabTypes.allItems then
-            itemId = item.id
-            itemStack = item.stack
-            index = item.index
-            stackCur = item.stackCur
-            stackMax = item.stackMax
+            if tabType == tabTypes.mogGarden then
+                -- Special handling for Mog Garden new items
+                itemId = item.id
+                itemStack = string.format('%d/1', item.count)
+                index = item.slot
+                stackCur = item.count
+                stackMax = 1
+            else
+                itemId = item.id
+                itemStack = item.stack
+                index = item.index
+                stackCur = item.stackCur
+                stackMax = item.stackMax
+            end
         end
 
         local itemData = items[itemId]
 
-        if (itemData.isBazaarable or itemData.isAuctionable or auctioneer.config.tabs[tabType].showAllItems[1]) then
+        -- Skip if itemData is nil (invalid item ID)
+        if itemData == nil then
+            goto continue
+        end
+
+        if (itemData.isBazaarable or itemData.isAuctionable or (auctioneer.config.tabs[tabType] and auctioneer.config.tabs[tabType].showAllItems[1]) or tabType == tabTypes.mogGarden) then
             if tab.category == 999 or tab.category == itemData.category then
                 if itemData.longName and string.find(itemData.longName:lower(), input:lower(), 1, true) or itemData.shortName and
                     string.find(itemData.shortName:lower(), input:lower(), 1, true) then
@@ -47,6 +64,7 @@ function search.update(tabType, tab)
                 end
             end
         end
+        ::continue::
     end
 
     if #tab.results == 0 then

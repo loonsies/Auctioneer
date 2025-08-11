@@ -2,6 +2,7 @@ local imgui = require('imgui')
 local chat = require('chat')
 local ffi = require('ffi')
 local settings = require('settings')
+
 local auctionHouse = require('src/auctionHouse')
 local search = require('src/search')
 local task = require('src/task')
@@ -34,6 +35,12 @@ local preview = {
 
 local modal = {
     visible = false
+}
+
+local bellhopDropModal = {
+    visible = false,
+    action = '',
+    items = {}
 }
 
 function ui.updateETA()
@@ -160,6 +167,89 @@ function ui.drawConfirmationModal()
     end
 end
 
+function ui.drawBellhopDropConfirmationModal()
+    if not bellhopDropModal.visible then
+        return
+    end
+
+    imgui.SetNextWindowSize({ 0, 0 }, ImGuiCond_Always)
+    imgui.OpenPopup('Confirm ' .. bellhopDropModal.action)
+
+    if imgui.BeginPopupModal('Confirm ' .. bellhopDropModal.action, nil, ImGuiWindowFlags_AlwaysAutoResize) then
+        imgui.Text('Are you sure you want to proceed with this action?')
+        imgui.Separator()
+
+        if bellhopDropModal.action == 'Bellhop Buy' then
+            imgui.Text('You are about to purchase the following items:')
+        elseif bellhopDropModal.action == 'Bellhop Sell' then
+            imgui.Text('You are about to sell the following items:')
+        elseif bellhopDropModal.action == 'Drop' then
+            imgui.Text('You are about to drop the following items:')
+        end
+
+        -- Display list of items
+        if imgui.BeginChild('ItemList', { 400, math.min(200, #bellhopDropModal.items * 20 + 10) }, true) then
+            for _, item in ipairs(bellhopDropModal.items) do
+                if bellhopDropModal.action == 'Drop' then
+                    imgui.Text(string.format('-> %s (x%d) from slot %d', item.name, item.quantity, item.slot))
+                else
+                    imgui.Text(string.format('-> %s (x%d)', item.name, item.quantity))
+                end
+            end
+            imgui.EndChild()
+        end
+
+        imgui.Separator()
+
+        if imgui.Button('OK', { 120, 0 }) then
+            -- Execute the action
+            if bellhopDropModal.action == 'Bellhop Buy' then
+                ui.executeBellhopBuy(bellhopDropModal.items)
+            elseif bellhopDropModal.action == 'Bellhop Sell' then
+                ui.executeBellhopSell(bellhopDropModal.items)
+            elseif bellhopDropModal.action == 'Drop' then
+                ui.executeDrop(bellhopDropModal.items)
+            end
+            bellhopDropModal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+        imgui.SameLine()
+        if imgui.Button('Cancel', { 120, 0 }) then
+            bellhopDropModal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+
+        imgui.EndPopup()
+    end
+end
+
+function ui.executeBellhopBuy(items)
+    for _, item in ipairs(items) do
+        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', item.name, item.quantity))
+    end
+    quantityInput = { 1 }
+end
+
+function ui.executeBellhopSell(items)
+    for _, item in ipairs(items) do
+        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', item.name, item.quantity))
+    end
+    quantityInput = { 1 }
+end
+
+function ui.executeDrop(items)
+    local dropped = 0
+    for _, item in ipairs(items) do
+        if packets.dropItemBySlot(item.slot, item.quantity) then
+            print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', item.name, item.slot))))
+            dropped = dropped + 1
+        end
+    end
+    if dropped == 0 then
+        print(chat.header(addon.name):append(chat.error('Failed to drop any items')))
+    end
+end
+
 function ui.drawFilters()
     imgui.Text('Category')
     imgui.SameLine()
@@ -256,6 +346,21 @@ function ui.drawSearch()
             inventory.update()
             search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
         end
+
+        -- Add reset button for Mog Garden tab
+        if auctioneer.currentTab == tabTypes.mogGarden then
+            imgui.SameLine()
+            if imgui.Button('Reset##resetMogGarden') then
+                local mogGarden = require('src/mogGarden')
+                local success, message = mogGarden.resetSnapshot()
+                if success then
+                    print(chat.header(addon.name):append(chat.message(message)))
+                else
+                    print(chat.header(addon.name):append(chat.error(message)))
+                end
+            end
+        end
+
         imgui.SameLine()
     end
 
@@ -285,8 +390,8 @@ function ui.drawSearch()
 
     -- Utils section - exactly one line of buttons (conditional)
     local utilsHeight = 0
-    if (auctioneer.config.bellhopCommands[1] and auctioneer.currentTab == tabTypes.inventory and AshitaCore:GetPluginManager():Get('Bellhop')) or
-        (auctioneer.config.dropButton[1] and auctioneer.currentTab == tabTypes.inventory) or
+    if (auctioneer.config.bellhopCommands[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden) and AshitaCore:GetPluginManager():Get('Bellhop')) or
+        (auctioneer.config.dropButton[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)) or
         true then -- "Open wiki" and "Open FFXIAH" buttons are always shown
         utilsHeight = frameHeight + (framePadding * 2) + itemSpacing
     end
@@ -361,9 +466,9 @@ function ui.drawSearch()
 
                     imgui.PushID(i)
 
-                    -- Bellhop selection checkbox (inventory tab only, when enabled)
+                    -- Bellhop selection checkbox (inventory and mog garden tabs only, when enabled)
                     local showBhCheckbox = auctioneer.config.bellhopCommands[1]
-                        and auctioneer.currentTab == tabTypes.inventory
+                        and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)
                         and AshitaCore:GetPluginManager():Get('Bellhop')
 
                     local checkboxSize = rowHeight * 0.8
@@ -435,14 +540,49 @@ function ui.drawSearch()
                         baseLabel = string.format('%s (%s)', items[itemId].shortName, itemStack)
                     end
 
+                    -- Build flags for auction/bazaar restrictions
+                    local flags = {}
+                    if not items[itemId].isAuctionable then
+                        table.insert(flags, 'Auction')
+                    end
+                    if not items[itemId].isBazaarable then
+                        table.insert(flags, 'Bazaar')
+                    end
+                    if not items[itemId].isVendorable then
+                        table.insert(flags, 'Vendor')
+                    end
+                    local flagsString = ''
+                    if #flags > 0 then
+                        flagsString = 'X ' .. table.concat(flags, '/')
+                    end
+
                     -- Scale font size based on row height
                     local baseFontSize = imgui.GetFontSize()
                     local fontScale = rowHeight / 24.0
 
                     imgui.SetWindowFontScale(fontScale)
 
+                    -- Get row position for flags display
+                    local itemStartX = imgui.GetCursorPosX()
+                    local itemStartY = imgui.GetCursorPosY()
+
                     if imgui.Selectable(baseLabel .. '##' .. itemId .. (index and ('-' .. index) or ''), isSelected, nil, { remainingWidth, rowHeight }) then
                         labelClicked = true
+                    end
+
+                    -- Draw flags on the right side of the row
+                    if flagsString ~= '' then
+                        local textWidth = imgui.CalcTextSize(flagsString)
+                        imgui.SetCursorPosX(itemStartX + remainingWidth - textWidth - 5) -- 5px padding from right edge
+                        imgui.SetCursorPosY(itemStartY + (rowHeight - imgui.GetFontSize()) * 0.5)
+
+                        local flagColor
+                        if isSelected or imgui.IsItemHovered() then
+                            flagColor = { 1.0, 1.0, 1.0, 1.0 } -- White when selected/hovered
+                        else
+                            flagColor = { 1.0, 0.3, 0.3, 1.0 } -- Red when normal
+                        end
+                        imgui.TextColored(flagColor, flagsString)
                     end
 
                     imgui.SetWindowFontScale(1.0)
@@ -517,95 +657,192 @@ function ui.drawItemPreview()
 end
 
 function ui.drawUtils()
-    if auctioneer.config.bellhopCommands[1] and auctioneer.currentTab == tabTypes.inventory and AshitaCore:GetPluginManager():Get('Bellhop') then
+    if auctioneer.config.bellhopCommands[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden) and AshitaCore:GetPluginManager():Get('Bellhop') then
         if imgui.Button('Bellhop Buy##bellhopBuy') then
-            local tab = auctioneer.tabs[auctioneer.currentTab]
-            local queued = 0
-            if tab.bhChecked then
-                for _, entry in ipairs(tab.results) do
-                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
-                    if tab.bhChecked[key] then
-                        local name = items[entry.id].shortName
-                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', name, quantityInput[1]))
-                        queued = queued + 1
+            if auctioneer.config.bellhopDropConfirmation[1] then
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local itemList = {}
+
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] then
+                            local name = items[entry.id].shortName
+                            table.insert(itemList, { name = name, quantity = quantityInput[1] })
+                        end
                     end
                 end
-            end
-            if queued == 0 then
-                if tab.selectedItem == nil then
-                    print(chat.header(addon.name):append(chat.error('Please select an item')))
-                else
-                    AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
-                    queued = 1
+
+                if #itemList == 0 then
+                    if tab.selectedItem == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item')))
+                    else
+                        table.insert(itemList, { name = items[tab.selectedItem].shortName, quantity = quantityInput[1] })
+                    end
                 end
-            end
-            if queued > 0 then
-                quantityInput = { 1 }
+
+                if #itemList > 0 then
+                    bellhopDropModal.visible = true
+                    bellhopDropModal.action = 'Bellhop Buy'
+                    bellhopDropModal.items = itemList
+                end
+            else
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local queued = 0
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] then
+                            local name = items[entry.id].shortName
+                            AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', name, quantityInput[1]))
+                            queued = queued + 1
+                        end
+                    end
+                end
+                if queued == 0 then
+                    if tab.selectedItem == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item')))
+                    else
+                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh buy "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
+                        queued = 1
+                    end
+                end
+                if queued > 0 then
+                    quantityInput = { 1 }
+                end
             end
         end
         imgui.SameLine()
 
         if imgui.Button('Bellhop Sell##bellhopSell') then
-            local tab = auctioneer.tabs[auctioneer.currentTab]
-            local queued = 0
-            if tab.bhChecked then
-                for _, entry in ipairs(tab.results) do
-                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
-                    if tab.bhChecked[key] then
-                        local name = items[entry.id].shortName
-                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', name, quantityInput[1]))
-                        queued = queued + 1
+            if auctioneer.config.bellhopDropConfirmation[1] then
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local itemList = {}
+
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] then
+                            local name = items[entry.id].shortName
+                            table.insert(itemList, { name = name, quantity = quantityInput[1] })
+                        end
                     end
                 end
-            end
-            if queued == 0 then
-                if tab.selectedItem == nil then
-                    print(chat.header(addon.name):append(chat.error('Please select an item')))
-                else
-                    AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
-                    queued = 1
+
+                if #itemList == 0 then
+                    if tab.selectedItem == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item')))
+                    else
+                        table.insert(itemList, { name = items[tab.selectedItem].shortName, quantity = quantityInput[1] })
+                    end
                 end
-            end
-            if queued > 0 then
-                quantityInput = { 1 }
+
+                if #itemList > 0 then
+                    bellhopDropModal.visible = true
+                    bellhopDropModal.action = 'Bellhop Sell'
+                    bellhopDropModal.items = itemList
+                end
+            else
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local queued = 0
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] then
+                            local name = items[entry.id].shortName
+                            AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', name, quantityInput[1]))
+                            queued = queued + 1
+                        end
+                    end
+                end
+                if queued == 0 then
+                    if tab.selectedItem == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item')))
+                    else
+                        AshitaCore:GetChatManager():QueueCommand(-1, string.format('/bh sell "%s" %i', items[tab.selectedItem].shortName, quantityInput[1]))
+                        queued = 1
+                    end
+                end
+                if queued > 0 then
+                    quantityInput = { 1 }
+                end
             end
         end
         imgui.SameLine()
     end
 
-    if auctioneer.config.dropButton[1] and auctioneer.currentTab == tabTypes.inventory then
+    if auctioneer.config.dropButton[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden) then
         if imgui.Button('Drop##dropItems') then
-            local tab = auctioneer.tabs[auctioneer.currentTab]
-            local dropped = 0
+            if auctioneer.config.bellhopDropConfirmation[1] then
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local itemList = {}
 
-            if tab.bhChecked then
-                for _, entry in ipairs(tab.results) do
-                    local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
-                    if tab.bhChecked[key] and entry.index then
-                        local name = items[entry.id].shortName
-                        if packets.dropItemBySlot(entry.index, entry.stackCur) then
-                            print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, entry.index))))
-                            dropped = dropped + 1
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] and entry.index then
+                            local name = items[entry.id].shortName
+                            table.insert(itemList, { name = name, quantity = entry.stackCur, slot = entry.index })
                         end
                     end
                 end
-            end
 
-            if dropped == 0 then
-                if tab.selectedItem == nil or tab.selectedIndex == nil then
-                    print(chat.header(addon.name):append(chat.error('Please select an item or check items to drop')))
-                else
-                    local name = items[tab.selectedItem].shortName
-                    local selectedEntry = nil
-                    for _, entry in ipairs(tab.results) do
-                        if entry.id == tab.selectedItem and entry.index == tab.selectedIndex then
-                            selectedEntry = entry
-                            break
+                if #itemList == 0 then
+                    if tab.selectedItem == nil or tab.selectedIndex == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item or check items to drop')))
+                    else
+                        local name = items[tab.selectedItem].shortName
+                        local selectedEntry = nil
+                        for _, entry in ipairs(tab.results) do
+                            if entry.id == tab.selectedItem and entry.index == tab.selectedIndex then
+                                selectedEntry = entry
+                                break
+                            end
+                        end
+                        if selectedEntry then
+                            table.insert(itemList, { name = name, quantity = selectedEntry.stackCur, slot = selectedEntry.index })
                         end
                     end
+                end
 
-                    if selectedEntry and packets.dropItemBySlot(selectedEntry.index, selectedEntry.stackCur) then
-                        print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, selectedEntry.index))))
+                if #itemList > 0 then
+                    bellhopDropModal.visible = true
+                    bellhopDropModal.action = 'Drop'
+                    bellhopDropModal.items = itemList
+                end
+            else
+                local tab = auctioneer.tabs[auctioneer.currentTab]
+                local dropped = 0
+
+                if tab.bhChecked then
+                    for _, entry in ipairs(tab.results) do
+                        local key = tostring(entry.id) .. ':' .. tostring(entry.index or 0)
+                        if tab.bhChecked[key] and entry.index then
+                            local name = items[entry.id].shortName
+                            if packets.dropItemBySlot(entry.index, entry.stackCur) then
+                                print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, entry.index))))
+                                dropped = dropped + 1
+                            end
+                        end
+                    end
+                end
+
+                if dropped == 0 then
+                    if tab.selectedItem == nil or tab.selectedIndex == nil then
+                        print(chat.header(addon.name):append(chat.error('Please select an item or check items to drop')))
+                    else
+                        local name = items[tab.selectedItem].shortName
+                        local selectedEntry = nil
+                        for _, entry in ipairs(tab.results) do
+                            if entry.id == tab.selectedItem and entry.index == tab.selectedIndex then
+                                selectedEntry = entry
+                                break
+                            end
+                        end
+
+                        if selectedEntry and packets.dropItemBySlot(selectedEntry.index, selectedEntry.stackCur) then
+                            print(chat.header(addon.name):append(chat.message(string.format('Dropping %s from slot %d', name, selectedEntry.index))))
+                        end
                     end
                 end
             end
@@ -942,6 +1179,17 @@ function ui.drawBuySellTab()
                 imgui.EndTabItem()
             end
         end
+
+        -- Mog Garden tab (only show when active and enabled)
+        if auctioneer.config.mogGarden[1] and auctioneer.mogGarden.active then
+            local tabLabel = tabTypes[6]
+            if imgui.BeginTabItem(tabLabel) then
+                auctioneer.currentTab = 6
+                ui.drawSearch()
+                imgui.EndTabItem()
+            end
+        end
+
         imgui.EndTabBar()
     end
 
@@ -1075,6 +1323,10 @@ function ui.drawSettingsTab()
         settings.save()
     end
 
+    if imgui.Checkbox('Enable Bellhop/drop confirmation popup', auctioneer.config.bellhopDropConfirmation) then
+        settings.save()
+    end
+
     if imgui.Checkbox('Remove next buy tasks from queue if a task fails', auctioneer.config.removeFailedBuyTasks) then
         settings.save()
     end
@@ -1098,11 +1350,21 @@ function ui.drawSettingsTab()
         settings.save()
     end
 
-    if imgui.Checkbox('Show bellhop commands', auctioneer.config.bellhopCommands) then
+    if imgui.Checkbox('Show Bellhop commands', auctioneer.config.bellhopCommands) then
         settings.save()
     end
 
     if imgui.Checkbox('Show drop button', auctioneer.config.dropButton) then
+        settings.save()
+    end
+
+    if imgui.Checkbox('Enable Mog Garden tracking', auctioneer.config.mogGarden) then
+        if not auctioneer.config.mogGarden[1] and auctioneer.mogGarden.active then
+            -- If disabled while active, deactivate tracking
+            auctioneer.mogGarden.active = false
+            auctioneer.mogGarden.inventorySnapshot = {}
+            auctioneer.mogGarden.newItems = {}
+        end
         settings.save()
     end
 end
@@ -1180,6 +1442,7 @@ function ui.drawUI()
             imgui.EndTabBar()
         end
         ui.drawConfirmationModal()
+        ui.drawBellhopDropConfirmationModal()
         imgui.End()
     end
 

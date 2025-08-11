@@ -4,6 +4,7 @@ local config = {}
 
 local default = T {
     confirmationPopup = { true },
+    bellhopDropConfirmation = { true },
     duplicatePopup = { true },
     itemPreview = { true },
     ffxiah = { true },
@@ -14,6 +15,7 @@ local default = T {
     separateFFXIAH = { true },
     bellhopCommands = { true },
     dropButton = { false },
+    mogGarden = { true },
     tabs = {
         [1] = {
             showAllItems = { false }
@@ -28,6 +30,9 @@ local default = T {
             showAllItems = { false }
         },
         [5] = {
+            showAllItems = { false }
+        },
+        [6] = {
             showAllItems = { false }
         }
     }
