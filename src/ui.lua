@@ -363,22 +363,14 @@ function ui.drawSearch()
         end
     end
 
-    -- Search input with select/unselect and clear buttons
+
     local showSelectButtons = (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)
         and auctioneer.config.bellhopCommands[1] and AshitaCore:GetPluginManager():Get('Bellhop')
-
     local selectButtonWidth = 70
     local unselectButtonWidth = 85
     local clearButtonWidth = 50
-    local totalButtonsWidth = 0
 
-    if showSelectButtons then
-        totalButtonsWidth = selectButtonWidth + unselectButtonWidth + clearButtonWidth + (imgui.GetStyle().ItemSpacing.x * 3)
-    else
-        totalButtonsWidth = clearButtonWidth + imgui.GetStyle().ItemSpacing.x
-    end
-
-    -- Show select/unselect buttons first if needed
+    -- Select/Unselect buttons
     if showSelectButtons then
         if imgui.Button('Select##selectAll', { selectButtonWidth, 0 }) then
             local currentTab = auctioneer.tabs[auctioneer.currentTab]
@@ -389,17 +381,25 @@ function ui.drawSearch()
                 currentTab.bhChecked[key] = true
             end
         end
-
         imgui.SameLine()
         if imgui.Button('Unselect##unselectAll', { unselectButtonWidth, 0 }) then
             local currentTab = auctioneer.tabs[auctioneer.currentTab]
-            currentTab.bhChecked = {}
+            if currentTab.bhChecked then
+                for i = 1, #currentTab.results do
+                    local itemEntry = currentTab.results[i]
+                    local key = tostring(itemEntry.id) .. ':' .. tostring(itemEntry.index or 0)
+                    currentTab.bhChecked[key] = nil
+                end
+            end
         end
-
         imgui.SameLine()
     end
 
-    imgui.SetNextItemWidth(-totalButtonsWidth)
+    -- Search bar
+    local availX = select(1, imgui.GetContentRegionAvail())
+    local searchBarWidth = availX - clearButtonWidth - imgui.GetStyle().ItemSpacing.x
+    if searchBarWidth < 100 then searchBarWidth = 100 end
+    imgui.SetNextItemWidth(searchBarWidth)
     imgui.InputText('##SearchInput', currentTab.input, 48)
 
     imgui.SameLine()
@@ -408,28 +408,27 @@ function ui.drawSearch()
         search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
     end
 
-    -- Calculate space needed for bottom elements with precise measurements
+    -- Calculate reserved height for lower UI
     local reservedHeight = 0
     local frameHeight = imgui.GetFontSize()
     local itemSpacing = imgui.GetStyle().ItemSpacing.y
     local framePadding = imgui.GetStyle().FramePadding.y
 
-    -- Item preview height (if enabled) - fixed 150px child window + border
+    -- Item preview height
     if auctioneer.config.itemPreview[1] then
         reservedHeight = reservedHeight + 150 + itemSpacing
     end
 
-    -- Commands section - exactly what gets drawn:
-    -- Line 1: "Quantity" + InputInt + "Price" + InputText (frame height + padding)
+    -- Commands section
     reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
 
-    -- Line 2: Checkbox + Buy + Sell + Max buttons + Gil display (frame height + padding)
+    -- Buy/Sell/Max/Gil
     reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
 
-    -- Dummy spacing after commands
+    -- Spacing
     reservedHeight = reservedHeight + itemSpacing
 
-    -- Utils section - exactly one line of buttons (conditional)
+    -- Utils section
     local utilsHeight = 0
     if (auctioneer.config.bellhopCommands[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden) and AshitaCore:GetPluginManager():Get('Bellhop')) or
         (auctioneer.config.dropButton[1] and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)) or
@@ -438,43 +437,43 @@ function ui.drawSearch()
     end
     reservedHeight = reservedHeight + utilsHeight
 
-    -- FFXIAH section (if enabled) - exactly what gets drawn:
+    -- FFXIAH section
     if auctioneer.config.ffxiah[1] then
-        -- Line 1: "FFXIAH" + "Server" + combo (frame height + padding)
+        -- FFXIAH server combo
         reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
 
-        -- Line 2: "Fetch" button or "Fetching..." text + optional "Clear windows" button
+        -- Fetch/Clear buttons
         reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
 
-        -- If not using separate windows and data exists, add space for inline display
+        -- Inline FFXIAH display
         if not auctioneer.config.separateFFXIAH[1] and auctioneer.ffxiah.windows[1] then
-            -- Item info (3 lines) + separator
+            -- Item info
             reservedHeight = reservedHeight + (frameHeight * 3) + itemSpacing * 2
 
-            -- Price history table (if exists) - fixed height of 150
+            -- Price history
             if auctioneer.ffxiah.windows[1].sales then
                 reservedHeight = reservedHeight + 150 + itemSpacing
             end
 
-            -- Bazaar table (if exists) - fixed height of 150
+            -- Bazaar
             if auctioneer.ffxiah.windows[1].bazaar then
                 reservedHeight = reservedHeight + 150 + itemSpacing
             end
         end
     end
 
-    -- Calculate available height for search results - use only the Y component
+    -- Available height for results
     local _, availableHeight = imgui.GetContentRegionAvail()
     availableHeight = availableHeight - reservedHeight - 5 -- Extra 5px buffer to prevent scrollbar
     availableHeight = math.max(availableHeight, 60)        -- Minimum height
 
     imgui.SetNextWindowSizeConstraints({ 150, 0 }, { FLT_MAX, FLT_MAX })
     if imgui.BeginChild(string.format('##SearchResultsChild%s', currentTabName), { 0, availableHeight }, false) then
-        -- Use configurable values with defaults
+        -- Configurable values
         local iconSize = (auctioneer.config.itemIconSize and auctioneer.config.itemIconSize[1]) or 24
         local rowHeight = (auctioneer.config.itemRowHeight and auctioneer.config.itemRowHeight[1]) or 24
 
-        -- Remove all spacing to create seamless rows
+        -- No spacing for seamless rows
         imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0, 0 })
         imgui.PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 })
 
@@ -502,12 +501,12 @@ function ui.drawSearch()
                     local iconClicked = false
                     local labelClicked = false
 
-                    -- Create a full-width row with exact height
+                    -- Full-width row
                     local availWidth = imgui.GetContentRegionAvail()
 
                     imgui.PushID(i)
 
-                    -- Add alternating row background
+                    -- Alternating row background
                     local isEvenRow = (i + 1) % 2 == 0
                     if isEvenRow then
                         local drawList = imgui.GetWindowDrawList()
@@ -518,7 +517,7 @@ function ui.drawSearch()
                         drawList:AddRectFilled({ min_x, min_y }, { max_x, max_y }, bgColor)
                     end
 
-                    -- Bellhop selection checkbox (inventory and mog garden tabs only, when enabled)
+                    -- Bellhop checkbox
                     local showBhCheckbox = auctioneer.config.bellhopCommands[1]
                         and (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)
                         and AshitaCore:GetPluginManager():Get('Bellhop')
@@ -586,13 +585,13 @@ function ui.drawSearch()
                         imgui.SameLine(0, 2) -- 2px spacing after icon
                     end
 
-                    -- Create the item label
+                    -- Item label
                     local baseLabel = itemLabel
                     if auctioneer.currentTab ~= tabTypes.allItems then
                         baseLabel = string.format('%s (%s)', items[itemId].shortName, itemStack)
                     end
 
-                    -- Build flags for auction/bazaar restrictions
+                    -- Restriction flags
                     local flags = {}
                     if not items[itemId].isAuctionable then
                         table.insert(flags, 'Auction')
@@ -608,13 +607,13 @@ function ui.drawSearch()
                         flagsString = 'X ' .. table.concat(flags, '/')
                     end
 
-                    -- Scale font size based on row height
+                    -- Font scale
                     local baseFontSize = imgui.GetFontSize()
                     local fontScale = rowHeight / 24.0
 
                     imgui.SetWindowFontScale(fontScale)
 
-                    -- Get row position for flags display
+                    -- Row position for flags
                     local itemStartX = imgui.GetCursorPosX()
                     local itemStartY = imgui.GetCursorPosY()
 
@@ -622,7 +621,7 @@ function ui.drawSearch()
                         labelClicked = true
                     end
 
-                    -- Draw flags on the right side of the row
+                    -- Flags on right
                     if flagsString ~= '' then
                         local textWidth = imgui.CalcTextSize(flagsString)
                         imgui.SetCursorPosX(itemStartX + remainingWidth - textWidth - 5) -- 5px padding from right edge
@@ -654,7 +653,7 @@ function ui.drawSearch()
             imgui.Text(searchStatus[currentTab.status])
         end
 
-        imgui.PopStyleVar(2) -- Reset ItemSpacing and FramePadding
+        imgui.PopStyleVar(2)
         imgui.EndChild()
     end
 end
