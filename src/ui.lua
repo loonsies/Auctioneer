@@ -368,7 +368,7 @@ function ui.drawSearch()
         and auctioneer.config.bellhopCommands[1] and AshitaCore:GetPluginManager():Get('Bellhop')
     local selectButtonWidth = 70
     local unselectButtonWidth = 85
-    local clearButtonWidth = 50
+    local clearButtonWidth = 55
 
     -- Select/Unselect buttons
     if showSelectButtons then
