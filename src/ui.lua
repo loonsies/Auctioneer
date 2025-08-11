@@ -262,20 +262,82 @@ function ui.drawSearch()
     imgui.SetNextItemWidth(-1)
     imgui.InputText('##SearchInput', currentTab.input, 48)
 
-    if imgui.BeginTable(string.format('##SearchResultsTableChild%s', currentTabName), 2, ImGuiTableFlags_ScrollY, { 0, 150 }) then
-        local iconSize = 24
-        imgui.TableSetupColumn('##ItemIcon', ImGuiTableColumnFlags_WidthFixed)
-        imgui.TableSetupColumn('##ItemColumn', ImGuiTableColumnFlags_WidthStretch)
-        imgui.TableSetupColumn('##ItemFlag', ImGuiTableColumnFlags_WidthFixed)
+    -- Calculate space needed for bottom elements with precise measurements
+    local reservedHeight = 0
+    local frameHeight = imgui.GetFontSize()
+    local itemSpacing = imgui.GetStyle().ItemSpacing.y
+    local framePadding = imgui.GetStyle().FramePadding.y
+
+    -- Item preview height (if enabled) - fixed 150px child window + border
+    if auctioneer.config.itemPreview[1] then
+        reservedHeight = reservedHeight + 150 + itemSpacing
+    end
+
+    -- Commands section - exactly what gets drawn:
+    -- Line 1: "Quantity" + InputInt + "Price" + InputText (frame height + padding)
+    reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
+
+    -- Line 2: Checkbox + Buy + Sell + Max buttons + Gil display (frame height + padding)
+    reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
+
+    -- Dummy spacing after commands
+    reservedHeight = reservedHeight + itemSpacing
+
+    -- Utils section - exactly one line of buttons (conditional)
+    local utilsHeight = 0
+    if (auctioneer.config.bellhopCommands[1] and auctioneer.currentTab == tabTypes.inventory and AshitaCore:GetPluginManager():Get('Bellhop')) or
+        (auctioneer.config.dropButton[1] and auctioneer.currentTab == tabTypes.inventory) or
+        true then -- "Open wiki" and "Open FFXIAH" buttons are always shown
+        utilsHeight = frameHeight + (framePadding * 2) + itemSpacing
+    end
+    reservedHeight = reservedHeight + utilsHeight
+
+    -- FFXIAH section (if enabled) - exactly what gets drawn:
+    if auctioneer.config.ffxiah[1] then
+        -- Line 1: "FFXIAH" + "Server" + combo (frame height + padding)
+        reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
+
+        -- Line 2: "Fetch" button or "Fetching..." text + optional "Clear windows" button
+        reservedHeight = reservedHeight + frameHeight + (framePadding * 2) + itemSpacing
+
+        -- If not using separate windows and data exists, add space for inline display
+        if not auctioneer.config.separateFFXIAH[1] and auctioneer.ffxiah.windows[1] then
+            -- Item info (3 lines) + separator
+            reservedHeight = reservedHeight + (frameHeight * 3) + itemSpacing * 2
+
+            -- Price history table (if exists) - fixed height of 150
+            if auctioneer.ffxiah.windows[1].sales then
+                reservedHeight = reservedHeight + 150 + itemSpacing
+            end
+
+            -- Bazaar table (if exists) - fixed height of 150
+            if auctioneer.ffxiah.windows[1].bazaar then
+                reservedHeight = reservedHeight + 150 + itemSpacing
+            end
+        end
+    end
+
+    -- Calculate available height for search results - use only the Y component
+    local _, availableHeight = imgui.GetContentRegionAvail()
+    availableHeight = availableHeight - reservedHeight - 5 -- Extra 5px buffer to prevent scrollbar
+    availableHeight = math.max(availableHeight, 60)        -- Minimum height
+
+    imgui.SetNextWindowSizeConstraints({ 150, 0 }, { FLT_MAX, FLT_MAX })
+    if imgui.BeginChild(string.format('##SearchResultsChild%s', currentTabName), { 0, availableHeight }, false) then
+        -- Use configurable values with defaults
+        local iconSize = (auctioneer.config.itemIconSize and auctioneer.config.itemIconSize[1]) or 24
+        local rowHeight = (auctioneer.config.itemRowHeight and auctioneer.config.itemRowHeight[1]) or 24
+
+        -- Remove all spacing to create seamless rows
+        imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0, 0 })
+        imgui.PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 })
 
         if currentTab.status == searchStatus.found then
             local clipper = ImGuiListClipper.new()
-            clipper:Begin(#currentTab.results, -1)
+            clipper:Begin(#currentTab.results, rowHeight)
 
             while clipper:Step() do
                 for i = clipper.DisplayStart, clipper.DisplayEnd - 1 do
-                    imgui.TableNextRow(nil, iconSize)
-
                     local itemEntry = currentTab.results[i + 1]
                     local itemId = itemEntry.id
                     local itemStack = itemEntry.stack
@@ -286,82 +348,107 @@ function ui.drawSearch()
                     local bitmap = items[itemId].bitmap
                     local imageSize = items[itemId].imageSize
 
-                    imgui.TableSetColumnIndex(0)
                     if itemId ~= nil and preview.textureCache[itemId] == nil then
                         preview.textureCache[itemId] = utils.createTextureFromGame(bitmap, imageSize)
                     end
                     local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[itemId]))
 
                     local iconClicked = false
+                    local labelClicked = false
+
+                    -- Create a full-width row with exact height
+                    local availWidth = imgui.GetContentRegionAvail()
+
+                    imgui.PushID(i)
+
                     -- Bellhop selection checkbox (inventory tab only, when enabled)
                     local showBhCheckbox = auctioneer.config.bellhopCommands[1]
                         and auctioneer.currentTab == tabTypes.inventory
                         and AshitaCore:GetPluginManager():Get('Bellhop')
+
+                    local checkboxSize = rowHeight * 0.8
+                    local checkboxWidth = showBhCheckbox and rowHeight or 0
+                    local iconWidth = rowHeight
+                    local remainingWidth = availWidth - checkboxWidth - iconWidth
+
+                    imgui.BeginGroup()
+
                     if showBhCheckbox then
                         auctioneer.tabs[auctioneer.currentTab].bhChecked = auctioneer.tabs[auctioneer.currentTab].bhChecked or {}
                         local key = tostring(itemId) .. ':' .. tostring(index or 0)
                         local checkedTbl = { auctioneer.tabs[auctioneer.currentTab].bhChecked[key] == true }
-                        imgui.PushID('bhchk' .. i)
-                        if imgui.Checkbox('##bhchk', checkedTbl) then
-                            -- store true or nil to keep the table compact
+
+                        if imgui.InvisibleButton('##bhchk_btn', { rowHeight, rowHeight }) then
+                            checkedTbl[1] = not checkedTbl[1]
                             auctioneer.tabs[auctioneer.currentTab].bhChecked[key] = checkedTbl[1] or nil
                         end
-                        imgui.PopID()
-                        imgui.SameLine()
+
+                        -- Draw centered checkbox
+                        local btn_min_x, btn_min_y = imgui.GetItemRectMin()
+                        local btn_max_x, btn_max_y = imgui.GetItemRectMax()
+                        local drawList = imgui.GetWindowDrawList()
+                        local btn_center_x = btn_min_x + (btn_max_x - btn_min_x) * 0.5
+                        local btn_center_y = btn_min_y + (btn_max_y - btn_min_y) * 0.5
+
+                        local half_size = checkboxSize * 0.5
+                        local min_x = btn_center_x - half_size
+                        local min_y = btn_center_y - half_size
+                        local max_x = btn_center_x + half_size
+                        local max_y = btn_center_y + half_size
+                        local checkSize = checkboxSize * 0.8
+
+                        local bgColor = checkedTbl[1] and 0xFF4080FF or 0xFF2c2c2c
+                        drawList:AddRectFilled({ min_x, min_y }, { max_x, max_y }, bgColor, 2)
+
+                        if checkedTbl[1] then
+                            local markSize = checkSize * 0.3
+                            local center_x = btn_center_x
+                            local center_y = btn_center_y
+                            drawList:AddLine({ center_x - markSize, center_y },
+                                { center_x - markSize * 0.3, center_y + markSize * 0.7 },
+                                0xFFFFFFFF, 2)
+                            drawList:AddLine({ center_x - markSize * 0.3, center_y + markSize * 0.7 },
+                                { center_x + markSize, center_y - markSize * 0.5 },
+                                0xFFFFFFFF, 2)
+                        end
+
+                        imgui.SameLine(0, 2) -- 2px spacing after checkbox
                     end
 
                     if iconPointer then
-                        imgui.PushID(i)
-                        if imgui.InvisibleButton('icon_btn', { iconSize, iconSize }) then
+                        if imgui.InvisibleButton('icon_btn', { iconSize, rowHeight }) then
                             iconClicked = true
                         end
+
                         local min_x, min_y = imgui.GetItemRectMin()
-                        local max_x, max_y = imgui.GetItemRectMax()
-                        imgui.GetWindowDrawList():AddImage(iconPointer, { min_x, min_y }, { max_x, max_y })
-                        imgui.PopID()
+                        local iconCenterY = min_y + (rowHeight - iconSize) * 0.5
+                        imgui.GetWindowDrawList():AddImage(iconPointer,
+                            { min_x, iconCenterY },
+                            { min_x + iconSize, iconCenterY + iconSize })
+
+                        imgui.SameLine(0, 2) -- 2px spacing after icon
                     end
 
-                    local flags = {}
-                    if not items[itemId].isAuctionable then
-                        table.insert(flags, 'NoAuction')
-                    end
-                    if not items[itemId].isBazaarable then
-                        table.insert(flags, 'NoBazaar')
-                    end
-                    if not items[itemId].isVendorable then
-                        table.insert(flags, 'NoVendor')
-                    end
-
-                    local flagsString = table.concat(flags, '/') or ''
-
-                    imgui.TableSetColumnIndex(1)
+                    -- Create the item label
                     local baseLabel = itemLabel
                     if auctioneer.currentTab ~= tabTypes.allItems then
                         baseLabel = string.format('%s (%s)', items[itemId].shortName, itemStack)
                     end
-                    baseLabel = string.format('%s##%i', baseLabel, itemId)
-                    if index then
-                        baseLabel = string.format('%s-%i', baseLabel, index)
+
+                    -- Scale font size based on row height
+                    local baseFontSize = imgui.GetFontSize()
+                    local fontScale = rowHeight / 24.0
+
+                    imgui.SetWindowFontScale(fontScale)
+
+                    if imgui.Selectable(baseLabel .. '##' .. itemId .. (index and ('-' .. index) or ''), isSelected, nil, { remainingWidth, rowHeight }) then
+                        labelClicked = true
                     end
 
-                    local cellMinX = imgui.GetCursorPosX()
-                    local cellMinY = imgui.GetCursorPosY()
-                    local columnWidth = imgui.GetColumnWidth()
+                    imgui.SetWindowFontScale(1.0)
 
-                    local labelClicked = imgui.Selectable(baseLabel, isSelected, nil, { 0, iconSize })
-
-                    if flagsString ~= '' then
-                        local textWidth = select(1, imgui.CalcTextSize(flagsString))
-                        imgui.SetCursorPosX(cellMinX + columnWidth - textWidth - imgui.GetStyle().CellPadding.x)
-                        imgui.SetCursorPosY(cellMinY + (iconSize - imgui.GetFontSize()) * 0.5)
-                        local flagColor
-                        if isSelected or imgui.IsItemHovered() then
-                            flagColor = { 1.0, 1.0, 1.0, 1.0 }
-                        else
-                            flagColor = { 1.0, 0.3, 0.3, 1.0 }
-                        end
-                        imgui.TextColored(flagColor, flagsString)
-                    end
+                    imgui.EndGroup()
+                    imgui.PopID()
 
                     if iconClicked or labelClicked then
                         currentTab.selectedItem = itemId
@@ -372,11 +459,11 @@ function ui.drawSearch()
 
             clipper:End()
         else
-            imgui.TableNextRow()
-            imgui.TableSetColumnIndex(0)
             imgui.Text(searchStatus[currentTab.status])
         end
-        imgui.EndTable()
+
+        imgui.PopStyleVar(2) -- Reset ItemSpacing and FramePadding
+        imgui.EndChild()
     end
 end
 
@@ -926,19 +1013,65 @@ function ui.drawAuctionHouseTab()
 end
 
 function ui.drawSettingsTab()
-    if imgui.Checkbox('Enable transaction confirmation popup', auctioneer.config.confirmationPopup) then
-        settings.save()
+    -- Initialize default settings if they don't exist
+    if not auctioneer.config.itemRowHeight then
+        auctioneer.config.itemRowHeight = { 24 }
     end
+    if not auctioneer.config.itemIconSize then
+        auctioneer.config.itemIconSize = { 24 }
+    end
+
+    -- UI Appearance Settings
+    imgui.Text('UI Appearance')
+    imgui.Separator()
 
     if imgui.Checkbox('Display item preview', auctioneer.config.itemPreview) then
         settings.save()
     end
 
-    if imgui.Checkbox('Display price history', auctioneer.config.ffxiah) then
+    if imgui.Checkbox('Enable search filters', auctioneer.config.searchFilters) then
         settings.save()
     end
 
-    if imgui.Checkbox('Display auction house tab', auctioneer.config.auctionHouse) then
+    imgui.Text('Item List Row Height')
+    imgui.SameLine()
+    imgui.SetNextItemWidth(100)
+    if imgui.InputInt('##RowHeight', auctioneer.config.itemRowHeight) then
+        if auctioneer.config.itemRowHeight[1] < 16 then
+            auctioneer.config.itemRowHeight[1] = 16
+        elseif auctioneer.config.itemRowHeight[1] > 64 then
+            auctioneer.config.itemRowHeight[1] = 64
+        end
+        -- Ensure icon size doesn't exceed row height
+        if auctioneer.config.itemIconSize[1] > auctioneer.config.itemRowHeight[1] then
+            auctioneer.config.itemIconSize[1] = auctioneer.config.itemRowHeight[1]
+        end
+        settings.save()
+    end
+    imgui.SameLine()
+    imgui.Text('(16-64)')
+
+    imgui.Text('Item Icon Size')
+    imgui.SameLine()
+    imgui.SetNextItemWidth(100)
+    if imgui.InputInt('##IconSize', auctioneer.config.itemIconSize) then
+        if auctioneer.config.itemIconSize[1] < 12 then
+            auctioneer.config.itemIconSize[1] = 12
+        elseif auctioneer.config.itemIconSize[1] > auctioneer.config.itemRowHeight[1] then
+            auctioneer.config.itemIconSize[1] = auctioneer.config.itemRowHeight[1]
+        end
+        settings.save()
+    end
+    imgui.SameLine()
+    imgui.Text(string.format('(12-%d)', auctioneer.config.itemRowHeight[1]))
+
+    imgui.Dummy({ 0, 10 })
+
+    -- Transaction Settings
+    imgui.Text('Transaction Settings')
+    imgui.Separator()
+
+    if imgui.Checkbox('Enable transaction confirmation popup', auctioneer.config.confirmationPopup) then
         settings.save()
     end
 
@@ -946,7 +1079,17 @@ function ui.drawSettingsTab()
         settings.save()
     end
 
-    if imgui.Checkbox('Enable search filters', auctioneer.config.searchFilters) then
+    imgui.Dummy({ 0, 10 })
+
+    -- Feature Toggles
+    imgui.Text('Features')
+    imgui.Separator()
+
+    if imgui.Checkbox('Display auction house tab', auctioneer.config.auctionHouse) then
+        settings.save()
+    end
+
+    if imgui.Checkbox('Display price history', auctioneer.config.ffxiah) then
         settings.save()
     end
 
