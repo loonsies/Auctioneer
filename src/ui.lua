@@ -341,31 +341,72 @@ function ui.drawSearch()
 
     imgui.Text('Search (' .. #currentTab.results .. ')')
 
+    -- Add refresh button next to search count
     if auctioneer.currentTab ~= tabTypes.allItems then
+        imgui.SameLine()
         if imgui.Button('Refresh##refreshInventory') then
             inventory.update()
             search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
         end
+    end
 
-        -- Add reset button for Mog Garden tab
-        if auctioneer.currentTab == tabTypes.mogGarden then
-            imgui.SameLine()
-            if imgui.Button('Reset##resetMogGarden') then
-                local mogGarden = require('src/mogGarden')
-                local success, message = mogGarden.resetSnapshot()
-                if success then
-                    print(chat.header(addon.name):append(chat.message(message)))
-                else
-                    print(chat.header(addon.name):append(chat.error(message)))
-                end
+    -- Add reset button for Mog Garden tab
+    if auctioneer.currentTab == tabTypes.mogGarden then
+        if imgui.Button('Reset##resetMogGarden') then
+            local mogGarden = require('src/mogGarden')
+            local success, message = mogGarden.resetSnapshot()
+            if success then
+                print(chat.header(addon.name):append(chat.message(message)))
+            else
+                print(chat.header(addon.name):append(chat.error(message)))
             end
+        end
+    end
+
+    -- Search input with select/unselect and clear buttons
+    local showSelectButtons = (auctioneer.currentTab == tabTypes.inventory or auctioneer.currentTab == tabTypes.mogGarden)
+        and auctioneer.config.bellhopCommands[1] and AshitaCore:GetPluginManager():Get('Bellhop')
+
+    local selectButtonWidth = 70
+    local unselectButtonWidth = 85
+    local clearButtonWidth = 50
+    local totalButtonsWidth = 0
+
+    if showSelectButtons then
+        totalButtonsWidth = selectButtonWidth + unselectButtonWidth + clearButtonWidth + (imgui.GetStyle().ItemSpacing.x * 3)
+    else
+        totalButtonsWidth = clearButtonWidth + imgui.GetStyle().ItemSpacing.x
+    end
+
+    -- Show select/unselect buttons first if needed
+    if showSelectButtons then
+        if imgui.Button('Select##selectAll', { selectButtonWidth, 0 }) then
+            local currentTab = auctioneer.tabs[auctioneer.currentTab]
+            currentTab.bhChecked = currentTab.bhChecked or {}
+            for i = 1, #currentTab.results do
+                local itemEntry = currentTab.results[i]
+                local key = tostring(itemEntry.id) .. ':' .. tostring(itemEntry.index or 0)
+                currentTab.bhChecked[key] = true
+            end
+        end
+
+        imgui.SameLine()
+        if imgui.Button('Unselect##unselectAll', { unselectButtonWidth, 0 }) then
+            local currentTab = auctioneer.tabs[auctioneer.currentTab]
+            currentTab.bhChecked = {}
         end
 
         imgui.SameLine()
     end
 
-    imgui.SetNextItemWidth(-1)
+    imgui.SetNextItemWidth(-totalButtonsWidth)
     imgui.InputText('##SearchInput', currentTab.input, 48)
+
+    imgui.SameLine()
+    if imgui.Button('Clear##clearSearch', { clearButtonWidth, 0 }) then
+        currentTab.input[1] = ''
+        search.update(auctioneer.currentTab, auctioneer.tabs[auctioneer.currentTab])
+    end
 
     -- Calculate space needed for bottom elements with precise measurements
     local reservedHeight = 0
@@ -465,6 +506,17 @@ function ui.drawSearch()
                     local availWidth = imgui.GetContentRegionAvail()
 
                     imgui.PushID(i)
+
+                    -- Add alternating row background
+                    local isEvenRow = (i + 1) % 2 == 0
+                    if isEvenRow then
+                        local drawList = imgui.GetWindowDrawList()
+                        local min_x, min_y = imgui.GetCursorScreenPos()
+                        local max_x = min_x + availWidth
+                        local max_y = min_y + rowHeight
+                        local bgColor = 0x22000000 -- Higher opacity dark gray for visible contrast
+                        drawList:AddRectFilled({ min_x, min_y }, { max_x, max_y }, bgColor)
+                    end
 
                     -- Bellhop selection checkbox (inventory and mog garden tabs only, when enabled)
                     local showBhCheckbox = auctioneer.config.bellhopCommands[1]
