@@ -106,13 +106,31 @@ function mogGarden.update()
             -- Capture snapshot
             auctioneer.mogGarden.inventorySnapshot = {}
             for i = 0, 80 do
+                local res = AshitaCore:GetResourceManager()
                 local item = inv:GetContainerItem(0, i)
-                if item and item.Id ~= 0 and items[item.Id] then
+                local itemRes = nil
+                local stack = '0/0'
+
+                if item then
+                    itemRes = res:GetItemById(item.Id)
+
+                    if itemRes ~= nil then
+                        if itemRes.StackSize > 1 then
+                            stack = ('%i/%i'):format(item.Count, itemRes.StackSize)
+                        else
+                            stack = '1/1'
+                        end
+                    end
+                end
+
+                if itemRes ~= nil and item and item.Id ~= 0 and items[item.Id] then
                     local key = string.format('%d_%d', item.Id, i)
                     auctioneer.mogGarden.inventorySnapshot[key] = {
                         id = item.Id,
-                        count = item.Count,
-                        slot = i
+                        stackCur = item.Count,
+                        index = i,
+                        stack = stack,
+                        stackMax = itemRes.StackSize,
                     }
                 end
             end
@@ -125,13 +143,31 @@ function mogGarden.update()
     local foundNewItems = false
 
     for i = 0, 80 do
+        local res = AshitaCore:GetResourceManager()
         local item = inv:GetContainerItem(0, i)
-        if item and item.Id ~= 0 and items[item.Id] then
+        local itemRes = nil
+        local stack = '0/0'
+
+        if item then
+            itemRes = res:GetItemById(item.Id)
+
+            if itemRes ~= nil then
+                if itemRes.StackSize > 1 then
+                    stack = ('%i/%i'):format(item.Count, itemRes.StackSize)
+                else
+                    stack = '1/1'
+                end
+            end
+        end
+
+        if itemRes ~= nil and item and item.Id ~= 0 and items[item.Id] then
             local key = string.format('%d_%d', item.Id, i)
             currentItems[key] = {
                 id = item.Id,
-                count = item.Count,
-                slot = i
+                stackCur = item.Count,
+                index = i,
+                stack = stack,
+                stackMax = itemRes.StackSize
             }
 
             local snapshot = auctioneer.mogGarden.inventorySnapshot[key]
@@ -143,33 +179,40 @@ function mogGarden.update()
                     foundNewItems = true
                     auctioneer.mogGarden.newItems[key] = {
                         id = item.Id,
-                        count = item.Count,
-                        slot = i,
+                        stackCur = item.Count,
+                        index = i,
+                        stack = stack,
+                        stackMax = itemRes.StackSize,
                         isNew = true
                     }
 
                     auctioneer.mogGarden.inventorySnapshot[key] = {
                         id = item.Id,
-                        count = item.Count,
-                        slot = i
+                        stackCur = item.Count,
+                        index = i,
+                        stack = stack,
+                        stackMax = itemRes.StackSize
                     }
                 end
-            elseif snapshot.count < item.Count then
+            elseif snapshot.stackCur < item.Count then
                 -- Item count increased
                 foundNewItems = true
-                local newCount = item.Count - snapshot.count
+                local newCount = item.Count - snapshot.stackCur
                 if existingNew then
-                    auctioneer.mogGarden.newItems[key].count = existingNew.count + newCount
+                    auctioneer.mogGarden.newItems[key].stackCur = existingNew.stackCur + newCount
+                    auctioneer.mogGarden.newItems[key].stack = stack
                 else
                     auctioneer.mogGarden.newItems[key] = {
                         id = item.Id,
-                        count = newCount,
-                        slot = i,
+                        stackCur = newCount,
+                        index = i,
+                        stack = stack,
+                        stackMax = itemRes.StackSize,
                         isNew = false
                     }
                 end
 
-                snapshot.count = item.Count
+                snapshot.stackCur = item.Count
             end
         end
     end
@@ -204,13 +247,31 @@ function mogGarden.resetSnapshot()
 
     local inv = AshitaCore:GetMemoryManager():GetInventory()
     for i = 0, 80 do
+        local res = AshitaCore:GetResourceManager()
         local item = inv:GetContainerItem(0, i)
-        if item and item.Id ~= 0 and items[item.Id] then
+        local itemRes = nil
+        local stack = '0/0'
+
+        if item then
+            itemRes = res:GetItemById(item.Id)
+
+            if itemRes ~= nil then
+                if itemRes.StackSize > 1 then
+                    stack = ('%i/%i'):format(item.Count, itemRes.StackSize)
+                else
+                    stack = '1/1'
+                end
+            end
+        end
+
+        if itemRes ~= nil and item and item.Id ~= 0 and items[item.Id] then
             local key = string.format('%d_%d', item.Id, i)
             auctioneer.mogGarden.inventorySnapshot[key] = {
                 id = item.Id,
-                count = item.Count,
-                slot = i
+                stackCur = item.Count,
+                index = i,
+                stack = stack,
+                stackMax = itemRes.StackSize
             }
         end
     end

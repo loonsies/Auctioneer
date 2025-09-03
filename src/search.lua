@@ -19,20 +19,11 @@ function search.update(tabType, tab)
         local stackMax = nil
 
         if tabType ~= tabTypes.allItems then
-            if tabType == tabTypes.mogGarden then
-                -- Special handling for Mog Garden new items
-                itemId = item.id
-                itemStack = string.format('%d/1', item.count)
-                index = item.slot
-                stackCur = item.count
-                stackMax = 1
-            else
-                itemId = item.id
-                itemStack = item.stack
-                index = item.index
-                stackCur = item.stackCur
-                stackMax = item.stackMax
-            end
+            itemId = item.id
+            itemStack = item.stack
+            index = item.index
+            stackCur = item.stackCur
+            stackMax = item.stackMax
         end
 
         local itemData = items[itemId]
