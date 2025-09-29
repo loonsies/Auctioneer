@@ -1,5 +1,5 @@
 addon.name = 'Auctioneer'
-addon.version = "2.27"
+addon.version = '2.27'
 addon.author = 'Original addon by Ivaar, ported and modified by looney'
 addon.desc = 'Interact with auction house using commands.'
 addon.link = 'https://github.com/loonsies/auctioneer'
@@ -7,7 +7,6 @@ addon.link = 'https://github.com/loonsies/auctioneer'
 -- Ashita dependencies
 require 'common'
 local settings = require('settings')
-local chat = require('chat')
 
 -- Local dependencies
 local commands = require('src/commands')
@@ -18,6 +17,7 @@ local itemUtils = require('src/itemUtils')
 local inventory = require('src/inventory')
 local search = require('src/search')
 local mogGarden = require('src/mogGarden')
+local nonBlockingRequests = require('libs/nonBlockingRequests')
 
 -- Data
 local tabData = require('data/tabData')
@@ -76,6 +76,7 @@ ashita.events.register('d3d_present', 'd3d_present_cb', function ()
     ui.update()
     ui.updateETA()
     mogGarden.update()
+    nonBlockingRequests.processAll()
 end)
 
 ashita.events.register('command', 'command_cb', function (cmd, nType)

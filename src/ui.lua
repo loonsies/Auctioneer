@@ -1129,45 +1129,26 @@ function ui.drawFFXIAH()
         imgui.EndCombo()
     end
 
-    if auctioneer.ffxiah.fetching == false then
+    if auctioneer.ffxiah.fetching then
+        imgui.Text('Fetching...')
+        imgui.SameLine()
+    else
         if imgui.Button('Fetch prices & bazaar') then
-            if auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
+            local selectedItem = auctioneer.tabs[auctioneer.currentTab].selectedItem
+            if selectedItem == nil then
                 print(chat.header(addon.name):append(chat.error('Please select an item')))
             else
+                local requestedItem = selectedItem
+                local requestedStack = stack[1]
+
+                auctioneer.fetchResult = nil
                 auctioneer.ffxiah.fetching = true
 
                 ashita.tasks.oncef(2, function ()
-                    ffxiah.fetch(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1])
-
-                    local data = auctioneer.fetchResult
-
-                    auctioneer.fetchResult = nil
-
-                    if data then
-                        local windowId = string.format('%i%i', data.itemId, os.time())
-                        if not auctioneer.ffxiah.windows[windowId] and (data.sales or data.bazaar) then
-                            table.insert(auctioneer.ffxiah.windows, {
-                                windowId = windowId,
-                                itemId = data.itemId,
-                                stack = data.stack,
-                                server = data.server,
-                                fetchedOn = os.time(),
-                                sales = data.sales,
-                                stock = data.stock,
-                                rate = data.rate,
-                                salesPerDay = data.salesPerDay,
-                                median = data.median,
-                                bazaar = data.bazaar
-                            })
-                        end
-                    end
-                    auctioneer.ffxiah.fetching = false
+                    ffxiah.fetch(requestedItem, requestedStack)
                 end)
             end
         end
-        imgui.SameLine()
-    else
-        imgui.Text('Fetching...')
         imgui.SameLine()
     end
 
