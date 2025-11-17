@@ -113,7 +113,9 @@ function task.filter(entry)
 
     for i = #queue, 1, -1 do
         local queueEntry = queue[i]
-        if entry.type == queueEntry.type and entry.index == queueEntry.item.Id and entry.single == queueEntry.single and entry.price == queueEntry.price then
+        local single = entry.single == 1 and 1 or 0
+
+        if entry.type == queueEntry.type and entry.index == queueEntry.item.Id and single == queueEntry.single and entry.price == queueEntry.price then
             doReset = true
             table.remove(queue, i)
             print(chat.header(addon.name):append(chat.warning(string.format('Task removed: %s "%s" %s %s ID:%s', taskTypes[entry.type], queueEntry.item.Name[1], utils.commaValue(queueEntry.price), queueEntry.single == '1' and '[Single]' or '[Stack]', queueEntry.item.Id))))
