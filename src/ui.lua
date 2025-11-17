@@ -24,7 +24,8 @@ local minSize = { 575, 400 }
 local defaultSizeFFXIAH = { 600, 500 }
 local minSizeFFXIAH = { 400, 400 }
 local quantityInput = { 1 }
-local priceInput = { '' }
+local priceInput = { 0 }
+local purchaseHistory = {}
 local stack = { false }
 local gilIcon = nil
 
@@ -37,11 +38,71 @@ local modal = {
     visible = false
 }
 
+local priceWarningModal = {
+    visible = false,
+    itemName = '',
+    previousPrice = 0,
+    newPrice = 0,
+    pendingAction = nil,
+    pendingArgs = {}
+}
+
 local bellhopDropModal = {
     visible = false,
     action = '',
     items = {}
 }
+
+function ui.addToPurchaseHistory(itemId, single, price)
+    local key = string.format('%d_%d', itemId, single and 1 or 0)
+    table.insert(purchaseHistory, 1, { key = key, itemId = itemId, single = single, price = price, timestamp = os.time() })
+    -- Keep only last 10 entries
+    while #purchaseHistory > 10 do
+        table.remove(purchaseHistory)
+    end
+end
+
+function ui.checkPriceWarning(itemId, single, newPrice)
+    if not auctioneer.config.priceWarningPopup or not auctioneer.config.priceWarningPopup[1] then
+        return false
+    end
+
+    local key = string.format('%d_%d', itemId, single and 1 or 0)
+    for _, entry in ipairs(purchaseHistory) do
+        if entry.key == key then
+            local oldDigits = math.floor(math.log10(entry.price)) + 1
+            local newDigits = math.floor(math.log10(newPrice)) + 1
+            if newDigits > oldDigits then
+                return true, entry.price
+            end
+            break
+        end
+    end
+    return false
+end
+
+function ui.executeBuyProposal(itemName, single, price, quantity)
+    local success = auctionHouse.proposal(auctionHouseActions.buy, itemName, single, tostring(price), quantity)
+    if success then
+        ui.addToPurchaseHistory(auctioneer.tabs[auctioneer.currentTab].selectedItem, single == '1', price)
+        if auctioneer.config.clearInputsAfterTransaction and auctioneer.config.clearInputsAfterTransaction[1] then
+            quantityInput = { 1 }
+            priceInput = { 0 }
+        end
+    end
+    return success
+end
+
+function ui.executeSellProposal(itemName, single, price, quantity)
+    local success = auctionHouse.proposal(auctionHouseActions.sell, itemName, single, tostring(price), quantity)
+    if success then
+        if auctioneer.config.clearInputsAfterTransaction and auctioneer.config.clearInputsAfterTransaction[1] then
+            quantityInput = { 1 }
+            priceInput = { 0 }
+        end
+    end
+    return success
+end
 
 function ui.updateETA()
     local now = os.clock()
@@ -151,8 +212,10 @@ function ui.drawConfirmationModal()
             single == '0' and 'Single' or 'Stack', name, utils.commaValue(price)))
         imgui.Text(string.format('This task will be executed %s times', quantity))
         if imgui.Button('OK', { 120, 0 }) then
-            if auctionHouse.proposal(modal.action, name, single, price, quantity) then
-                quantityInput = { 1 }
+            if modal.action == auctionHouseActions.buy then
+                ui.executeBuyProposal(name, single, price, quantity)
+            else
+                ui.executeSellProposal(name, single, price, quantity)
             end
             modal.visible = false
             imgui.CloseCurrentPopup()
@@ -160,6 +223,43 @@ function ui.drawConfirmationModal()
         imgui.SameLine()
         if imgui.Button('Cancel', { 120, 0 }) then
             modal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+
+        imgui.EndPopup()
+    end
+end
+
+function ui.drawPriceWarningModal()
+    if not priceWarningModal.visible then
+        return
+    end
+
+    imgui.SetNextWindowSize({ 0, 0 }, ImGuiCond_Always)
+    imgui.OpenPopup('Price Warning')
+
+    if imgui.BeginPopupModal('Price Warning', nil, ImGuiWindowFlags_AlwaysAutoResize) then
+        imgui.TextColored({ 1.0, 0.3, 0.3, 1.0 }, 'WARNING: Unusual price detected!')
+        imgui.Separator()
+        imgui.Text(string.format('Item: %s', priceWarningModal.itemName))
+        imgui.Text(string.format('Previous price: %s', utils.commaValue(priceWarningModal.previousPrice)))
+        imgui.TextColored({ 1.0, 0.3, 0.3, 1.0 }, string.format('New price: %s', utils.commaValue(priceWarningModal.newPrice)))
+        imgui.Text('')
+        imgui.Text('The new price has significantly more digits than your last purchase.')
+        imgui.Text('Are you sure you want to proceed?')
+        imgui.Separator()
+
+        if imgui.Button('Yes, proceed', { 120, 0 }) then
+            -- Execute the pending action
+            if priceWarningModal.pendingAction then
+                priceWarningModal.pendingAction(table.unpack(priceWarningModal.pendingArgs))
+            end
+            priceWarningModal.visible = false
+            imgui.CloseCurrentPopup()
+        end
+        imgui.SameLine()
+        if imgui.Button('Cancel', { 120, 0 }) then
+            priceWarningModal.visible = false
             imgui.CloseCurrentPopup()
         end
 
@@ -949,64 +1049,83 @@ function ui.drawCommands()
     imgui.Text('Price')
     imgui.SameLine()
     imgui.SetNextItemWidth(-1)
-    imgui.InputText('##PriceInput', priceInput, 48)
+    local step = auctioneer.config.priceInputStep and auctioneer.config.priceInputStep[1] or 1000
+    if imgui.InputInt('##PriceInput', priceInput, step, step * 10, 0) then
+        if priceInput[1] < 0 then
+            priceInput[1] = 0
+        end
+    end
 
     imgui.Checkbox('Stack', stack)
     imgui.SameLine()
 
     if imgui.Button('Buy') then
-        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
+        if priceInput[1] == nil or priceInput[1] <= 0 then
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
-            if auctioneer.config.confirmationPopup[1] then
+            local itemName = items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName
+            local singleStr = stack[1] and '1' or '0'
+            local price = priceInput[1]
+            local quantity = quantityInput[1]
+
+            -- Check for price warning
+            local shouldWarn, previousPrice = ui.checkPriceWarning(auctioneer.tabs[auctioneer.currentTab].selectedItem, stack[1], price)
+
+            if shouldWarn then
+                priceWarningModal.visible = true
+                priceWarningModal.itemName = itemName
+                priceWarningModal.previousPrice = previousPrice
+                priceWarningModal.newPrice = price
+                if auctioneer.config.confirmationPopup[1] then
+                    -- Queue both modals
+                    priceWarningModal.pendingAction = function ()
+                        modal.visible = true
+                        modal.action = auctionHouseActions.buy
+                        modal.args = { itemName, singleStr, price, quantity }
+                    end
+                    priceWarningModal.pendingArgs = {}
+                else
+                    priceWarningModal.pendingAction = ui.executeBuyProposal
+                    priceWarningModal.pendingArgs = { itemName, singleStr, price, quantity }
+                end
+            elseif auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
                     modal.visible = true
                     modal.action = auctionHouseActions.buy
-                    modal.args = {
-                        items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
-                        stack[1] and '1' or '0',
-                        priceInput[1],
-                        quantityInput[1],
-                    }
+                    modal.args = { itemName, singleStr, price, quantity }
                 end
             else
-                if auctionHouse.proposal(auctionHouseActions.buy, items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
-                        stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
-                    quantityInput = { 1 }
-                end
+                ui.executeBuyProposal(itemName, singleStr, price, quantity)
             end
         end
     end
     imgui.SameLine()
 
     if imgui.Button('Sell') then
-        if priceInput == nil or #priceInput == 0 or priceInput[1] == nil or priceInput[1] == '' then
+        if priceInput[1] == nil or priceInput[1] <= 0 then
             print(chat.header(addon.name):append(chat.error('Please enter a price')))
         elseif auctioneer.tabs[auctioneer.currentTab].selectedItem == nil then
             print(chat.header(addon.name):append(chat.error('Please select an item')))
         elseif auctioneer.auctionHouse == nil then
             print(chat.header(addon.name):append(chat.error('Interact with auction house or use /ah menu first')))
         else
+            local itemName = items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName
+            local singleStr = stack[1] and '1' or '0'
+            local price = priceInput[1]
+            local quantity = quantityInput[1]
+
             if auctioneer.config.confirmationPopup[1] then
                 if not modal.visible then
                     modal.visible = true
                     modal.action = auctionHouseActions.sell
-                    modal.args = {
-                        items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
-                        stack[1] and '1' or '0',
-                        priceInput[1],
-                        quantityInput[1],
-                    }
+                    modal.args = { itemName, singleStr, price, quantity }
                 end
             else
-                if auctionHouse.proposal(auctionHouseActions.sell, items[auctioneer.tabs[auctioneer.currentTab].selectedItem].shortName,
-                        stack[1] and '1' or '0', priceInput[1], quantityInput[1]) then
-                    quantityInput = { 1 }
-                end
+                ui.executeSellProposal(itemName, singleStr, price, quantity)
             end
         end
     end
@@ -1069,7 +1188,7 @@ function ui.drawPriceHistory(sales, stock, rate, salesPerDay, median)
             imgui.TableSetColumnIndex(3)
             local priceStr = tostring(sale.price)
             if imgui.Selectable(utils.commaValue(sale.price) .. '##' .. i) then
-                priceInput[1] = priceStr
+                priceInput[1] = sale.price
             end
         end
         imgui.EndTable()
@@ -1363,6 +1482,25 @@ function ui.drawSettingsTab()
         settings.save()
     end
 
+    if imgui.Checkbox('Clear price and quantity inputs after executing a transaction', auctioneer.config.clearInputsAfterTransaction) then
+        settings.save()
+    end
+
+    if imgui.Checkbox('Warn when price has more digits than previous purchases', auctioneer.config.priceWarningPopup) then
+        settings.save()
+    end
+
+    imgui.Text('Price input step amount')
+    imgui.SameLine()
+    imgui.SetNextItemWidth(150)
+    if imgui.InputInt('##PriceStep', auctioneer.config.priceInputStep, 100, 1000, 0) then
+        if auctioneer.config.priceInputStep[1] < 1 then
+            auctioneer.config.priceInputStep[1] = 1
+        end
+        settings.save()
+    end
+    imgui.ShowHelp('Controls the step size when using arrows in the price field', true)
+
     imgui.Dummy({ 0, 10 })
 
     -- Feature Toggles
@@ -1474,6 +1612,7 @@ function ui.drawUI()
             imgui.EndTabBar()
         end
         ui.drawConfirmationModal()
+        ui.drawPriceWarningModal()
         ui.drawBellhopDropConfirmationModal()
         imgui.End()
     end
