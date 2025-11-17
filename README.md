@@ -70,3 +70,4 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 - [Ivaar](https://github.com/Ivaar) for the [original addon](https://github.com/Ivaar/Ashita-addons/tree/master/Auctioneer)
 - [mousseng](https://github.com/mousseng) for some functions i used, mainly for item preview, inventory stuff
 - [ThornyFFXI](https://github.com/ThornyFFXI) for all their unvaluable help!
+
