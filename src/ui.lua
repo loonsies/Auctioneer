@@ -148,7 +148,7 @@ function ui.drawConfirmationModal()
         imgui.Text('Are you sure you want to proceed with this transaction?')
         imgui.Separator()
         imgui.Text(string.format('%s %s of %s for %s', auctionHouseActions[modal.action],
-            single == '0' and 'Single' or 'Stack', name, price))
+            single == '0' and 'Single' or 'Stack', name, utils.commaValue(price)))
         imgui.Text(string.format('This task will be executed %s times', quantity))
         if imgui.Button('OK', { 120, 0 }) then
             if auctionHouse.proposal(modal.action, name, single, price, quantity) then
