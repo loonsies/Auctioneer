@@ -288,7 +288,7 @@ function ui.drawBellhopDropConfirmationModal()
         end
 
         -- Display list of items
-        if imgui.BeginChild('ItemList', { 400, math.min(200, #bellhopDropModal.items * 20 + 10) }, ImGuiChildFlags_Border) then
+        if imgui.BeginChild('ItemList', { 400, math.min(200, #bellhopDropModal.items * 20 + 10) }, ImGuiChildFlags_Borders) then
             for _, item in ipairs(bellhopDropModal.items) do
                 if bellhopDropModal.action == 'Drop' then
                     imgui.Text(string.format('-> %s (x%d) from slot %d', item.name, item.quantity, item.slot))
@@ -761,7 +761,7 @@ function ui.drawSearch()
 end
 
 function ui.drawItemPreview()
-    if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, ImGuiChildFlags_Border) then
+    if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, ImGuiChildFlags_Borders) then
         if auctioneer.tabs[auctioneer.currentTab].selectedItem ~= nil then
             local id = auctioneer.tabs[auctioneer.currentTab].selectedItem
             local item = items[id]
