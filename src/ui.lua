@@ -288,7 +288,7 @@ function ui.drawBellhopDropConfirmationModal()
         end
 
         -- Display list of items
-        if imgui.BeginChild('ItemList', { 400, math.min(200, #bellhopDropModal.items * 20 + 10) }, true) then
+        if imgui.BeginChild('ItemList', { 400, math.min(200, #bellhopDropModal.items * 20 + 10) }, ImGuiChildFlags_Border) then
             for _, item in ipairs(bellhopDropModal.items) do
                 if bellhopDropModal.action == 'Drop' then
                     imgui.Text(string.format('-> %s (x%d) from slot %d', item.name, item.quantity, item.slot))
@@ -568,7 +568,7 @@ function ui.drawSearch()
     availableHeight = math.max(availableHeight, 60)        -- Minimum height
 
     imgui.SetNextWindowSizeConstraints({ 150, 0 }, { FLT_MAX, FLT_MAX })
-    if imgui.BeginChild(string.format('##SearchResultsChild%s', currentTabName), { 0, availableHeight }, false) then
+    if imgui.BeginChild(string.format('##SearchResultsChild%s', currentTabName), { 0, availableHeight }) then
         -- Configurable values
         local iconSize = (auctioneer.config.itemIconSize and auctioneer.config.itemIconSize[1]) or 24
         local rowHeight = (auctioneer.config.itemRowHeight and auctioneer.config.itemRowHeight[1]) or 24
@@ -708,10 +708,12 @@ function ui.drawSearch()
                     end
 
                     -- Font scale
-                    local baseFontSize = imgui.GetFontSize()
-                    local fontScale = rowHeight / 24.0
+                    local fontScale   = rowHeight / 24.0
+                    local defaultFont = imgui.GetFont()
+                    local defaultSize = imgui.GetFontSize()
+                    local scaledSize  = defaultSize * fontScale
 
-                    imgui.SetWindowFontScale(fontScale)
+                    imgui.PushFont(defaultFont, scaledSize)
 
                     -- Row position for flags
                     local itemStartX = imgui.GetCursorPosX()
@@ -736,7 +738,7 @@ function ui.drawSearch()
                         imgui.TextColored(flagColor, flagsString)
                     end
 
-                    imgui.SetWindowFontScale(1.0)
+                    imgui.PopFont()
 
                     imgui.EndGroup()
                     imgui.PopID()
@@ -759,7 +761,7 @@ function ui.drawSearch()
 end
 
 function ui.drawItemPreview()
-    if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, true) then
+    if imgui.BeginChild('##ItemPreviewChild', { 0, 150 }, ImGuiChildFlags_Border) then
         if auctioneer.tabs[auctioneer.currentTab].selectedItem ~= nil then
             local id = auctioneer.tabs[auctioneer.currentTab].selectedItem
             local item = items[id]
@@ -1614,8 +1616,8 @@ function ui.drawUI()
         ui.drawConfirmationModal()
         ui.drawPriceWarningModal()
         ui.drawBellhopDropConfirmationModal()
-        imgui.End()
     end
+    imgui.End()
 
     if auctioneer.config.separateFFXIAH[1] then
         ui.drawFFXIAHWindows()
