@@ -2,6 +2,7 @@ local chat = require('chat')
 local json = require('json')
 local utils = require('src/utils')
 local nonBlockingRequests = require('libs/nonBlockingRequests')
+local servers = require('data/servers')
 
 local ffxiah = {}
 
@@ -108,6 +109,9 @@ local function processResponse(response, id, stack, server)
         auctioneer.fetchResult.median = median
     end
 
+    local bazaarServerFilter = auctioneer.config.bazaarServerFilter[1]
+    local currentServerName = (type(servers[server]) == 'string' and servers[server]:lower()) or nil
+
     local bazaar, err2 = handleJsonField(response, 'bazaar', id, function (bazaarTable)
         local formatted = {}
         for _, entry in ipairs(bazaarTable) do
@@ -118,14 +122,18 @@ local function processResponse(response, id, stack, server)
             local timestamp = type(entry[5]) == 'number' and entry[5] or 0
 
             local srv, player = serverAndPlayerHtml:match("([^.]+)%.<a href='.-/([^/]+)'>")
-            table.insert(formatted, {
-                server = srv or '',
-                player = player or '',
-                price = price or 0,
-                quantity = quantity or 0,
-                zone = zone or '',
-                time = timestamp or 0
-            })
+            local srvLower = srv and srv:lower()
+
+            if srvLower and (not bazaarServerFilter or srvLower == currentServerName) then
+                table.insert(formatted, {
+                    server   = srv,
+                    player   = player or '',
+                    price    = price,
+                    quantity = quantity,
+                    zone     = zone,
+                    time     = timestamp
+                })
+            end
         end
         return formatted
     end)

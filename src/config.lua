@@ -12,6 +12,7 @@ local default = T {
     removeFailedBuyTasks = { true },
     searchFilters = { true },
     server = { 1 },
+    bazaarServerFilter = { false },
     separateFFXIAH = { true },
     bellhopCommands = { true },
     dropButton = { false },
