@@ -12,23 +12,48 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 ---
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4e095cef-a951-42d5-a7e7-884fd248147d" alt="Image 1" width="300px" style="max-width: 100%;"/>
-  <img src="https://github.com/user-attachments/assets/13609034-af4a-4b78-99b5-f1286c78a6da" alt="Image 2" width="400" style="max-width: 100%;"/>
+  <img width="673" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/9f8bd440-a612-41b4-9368-111fe829ae51" />
+  <img width="678" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/f6ef6c87-0346-4479-99b6-9dbdf90aefb4" />
+  <img width="752" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/20cde589-0e8c-4638-9bb3-345f73d83928" />
 </p>
 
-## Features
-- **Command-based Bidding and Selling**
-  Perform AH transactions quickly using simple commands.
-- **UI for transactions and sales monitoring**
-  You can search for items using their names, filter by category (more filters to come), or preview the item directly in the UI. You can also monitor your sales from there.
-- **Inbox/Outbox Access**
-  Open your delivery boxes directly with commands.
-- **Remote AH access and slots clearing**
-  You can clear your slots remotely, as well as accessing the auction house remotely (like with ahgo)
+# Features
+
+### Auction House
+- Buy and sell items directly from the UI or via commands
+- View your active auction house slots
+- Clear auction house slots from the UI
+
+### Item Browser
+- Browse **all in-game items** with full descriptions
+- Search items by name
+- Filter by:
+  - Auction House category
+  - Item level
+  - Job
+
+### Inventory Management
+- View **all your inventories** from a single UI
+- Includes Mog Garden inventory
+- Mog Garden tracking feature:
+  - Shows which items were added since entering Mog Garden
+  - Useful for fast daily Mog Garden runs
+
+### Customization
+- Wide range of settings to tailor the experience to your preferences
+
+### Integrations
+- **Bellhop integration**
+  - Buy and sell items to NPCs using items from your inventory
+- **External resources**
+  - Open **bg-wiki.com** or **FFXIAH** pages for any item directly from the UI
+- **Market data**
+  - Fetch FFXIAH price history
+  - View current bazaar listings
 
 ---
 
-## Commands
+# Commands
 
 ### Auctioneer
 - **Toggle UI:** `auctioneer|ah`
@@ -70,4 +95,5 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 - [Ivaar](https://github.com/Ivaar) for the [original addon](https://github.com/Ivaar/Ashita-addons/tree/master/Auctioneer)
 - [mousseng](https://github.com/mousseng) for some functions i used, mainly for item preview, inventory stuff
 - [ThornyFFXI](https://github.com/ThornyFFXI) for all their unvaluable help!
+
 
