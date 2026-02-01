@@ -1190,6 +1190,7 @@ end
 
 function ui.drawBazaar(bazaar)
     imgui.Text('Bazaar')
+    imgui.Text(string.format('Total listings: %i', #bazaar))
     imgui.Checkbox('Show other servers', auctioneer.config.bazaarShowOtherServers)
 
     if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
