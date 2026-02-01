@@ -1190,6 +1190,7 @@ end
 
 function ui.drawBazaar(bazaar)
     imgui.Text('Bazaar')
+    imgui.Checkbox('Show other servers', auctioneer.config.bazaarShowOtherServers)
 
     if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
         imgui.TableSetupColumn('Player')
@@ -1200,17 +1201,19 @@ function ui.drawBazaar(bazaar)
         imgui.TableHeadersRow()
 
         for i, bzr in ipairs(bazaar) do
-            imgui.TableNextRow()
-            imgui.TableSetColumnIndex(0)
-            imgui.Text(string.format('%s.%s', bzr.server, bzr.player))
-            imgui.TableSetColumnIndex(1)
-            imgui.Text(tostring(bzr.price))
-            imgui.TableSetColumnIndex(2)
-            imgui.Text(tostring(bzr.quantity))
-            imgui.TableSetColumnIndex(3)
-            imgui.Text(bzr.zone)
-            imgui.TableSetColumnIndex(4)
-            imgui.Text(utils.relativeTime(bzr.time))
+            if auctioneer.config.bazaarShowOtherServers[1] or (not auctioneer.config.bazaarShowOtherServers[1] and bzr.server == servers[auctioneer.config.server[1]]) then
+                imgui.TableNextRow()
+                imgui.TableSetColumnIndex(0)
+                imgui.Text(string.format('%s.%s', bzr.server, bzr.player))
+                imgui.TableSetColumnIndex(1)
+                imgui.Text(tostring(bzr.price))
+                imgui.TableSetColumnIndex(2)
+                imgui.Text(tostring(bzr.quantity))
+                imgui.TableSetColumnIndex(3)
+                imgui.Text(bzr.zone)
+                imgui.TableSetColumnIndex(4)
+                imgui.Text(utils.relativeTime(bzr.time))
+            end
         end
         imgui.EndTable()
     end

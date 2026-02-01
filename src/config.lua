@@ -13,6 +13,7 @@ local default = T {
     searchFilters = { true },
     server = { 1 },
     separateFFXIAH = { true },
+    bazaarShowOtherServers = { true },
     bellhopCommands = { true },
     dropButton = { false },
     mogGarden = { true },
