@@ -21,8 +21,10 @@ local tabTypes = require('data/tabTypes')
 local ui = {}
 
 local minSize = { 575, 400 }
-local defaultSizeFFXIAH = { 600, 500 }
+local defaultSizeFFXIAH = { 750, 580 }
 local minSizeFFXIAH = { 400, 400 }
+local defaultSizeFFXIAHNoBazaar = { 575, 350 }
+local minSizeFFXIAHNoBazaar = { 400, 350 }
 local quantityInput = { 1 }
 local priceInput = { 0 }
 local purchaseHistory = {}
@@ -1607,8 +1609,15 @@ function ui.drawFFXIAHWindows()
         local stk = data.stack and 'Stack' or 'Single'
         local server = servers[data.server]
         local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
-        imgui.SetNextWindowSizeConstraints(minSizeFFXIAH, { FLT_MAX, FLT_MAX })
-        imgui.SetNextWindowSize(defaultSizeFFXIAH, ImGuiCond_FirstUseEver)
+        local windowMinSize = minSizeFFXIAH
+        local windowDefaultSize = defaultSizeFFXIAH
+        if data.bazaar == nil then
+            windowMinSize = minSizeFFXIAHNoBazaar
+            windowDefaultSize = defaultSizeFFXIAHNoBazaar
+        end
+
+        imgui.SetNextWindowSizeConstraints(windowMinSize, { FLT_MAX, FLT_MAX })
+        imgui.SetNextWindowSize(windowDefaultSize, ImGuiCond_Appearing)
         if imgui.Begin(string.format('FFXIAH Data | %s [%i] (%s) | %s | %s##%s', name, data.itemId, stk, server, fetchedOn, data.windowId), open, ImGuiWindowFlags_NoSavedSettings) then
             imgui.Text(string.format('Item: %s [%i] (%s)', items[data.itemId].shortName, data.itemId, stk))
             imgui.Text(string.format('Server: %s', server))
