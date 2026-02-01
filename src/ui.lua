@@ -1192,7 +1192,25 @@ end
 
 function ui.drawBazaar(bazaar)
     imgui.Text('Bazaar')
-    imgui.Text(string.format('Total listings: %i', #bazaar))
+    local showOtherServers = auctioneer.config.bazaarShowOtherServers[1]
+    local currentServerName = servers[auctioneer.config.server[1]]
+    local visibleCount = 0
+    local hiddenCount = 0
+
+    for _, bzr in ipairs(bazaar) do
+        if showOtherServers or bzr.server == currentServerName then
+            visibleCount = visibleCount + 1
+        else
+            hiddenCount = hiddenCount + 1
+        end
+    end
+
+    if showOtherServers or hiddenCount == 0 then
+        imgui.Text(string.format('Total listings: %i', visibleCount))
+    else
+        imgui.Text(string.format('Total listings: %i (%i hidden)', visibleCount, hiddenCount))
+    end
+
     imgui.Checkbox('Show other servers', auctioneer.config.bazaarShowOtherServers)
 
     if imgui.BeginTable('##BazaarTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg), { 0, 150 }) then
@@ -1204,7 +1222,7 @@ function ui.drawBazaar(bazaar)
         imgui.TableHeadersRow()
 
         for i, bzr in ipairs(bazaar) do
-            if auctioneer.config.bazaarShowOtherServers[1] or (not auctioneer.config.bazaarShowOtherServers[1] and bzr.server == servers[auctioneer.config.server[1]]) then
+            if showOtherServers or (not showOtherServers and bzr.server == currentServerName) then
                 imgui.TableNextRow()
                 imgui.TableSetColumnIndex(0)
                 imgui.Text(string.format('%s.%s', bzr.server, bzr.player))
