@@ -145,6 +145,25 @@ function task.getQueueSize()
     return queue and #queue or 0
 end
 
+function task.getETA()
+    if #queue == 0 then
+        return 0
+    end
+
+    -- The throttle timer represents when the next task can start
+    local throttleRemaining = math.max(0, throttleTimer - os.clock())
+
+    -- Calculate time for tasks in queue
+    -- The first task's interval is already included in throttleRemaining
+    -- so we start from the second task
+    local totalTime = throttleRemaining
+    for i = 2, #queue do
+        totalTime = totalTime + (queue[i].interval or throttleInterval)
+    end
+
+    return totalTime
+end
+
 ashita.events.register('packet_out', 'packet_out_cb', function (e)
     if (e.id == 0x15) then
         handleQueue()

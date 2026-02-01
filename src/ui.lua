@@ -104,16 +104,6 @@ function ui.executeSellProposal(itemName, single, price, quantity)
     return success
 end
 
-function ui.updateETA()
-    local now = os.clock()
-    local deltaTime = now - auctioneer.lastUpdateTime
-    auctioneer.lastUpdateTime = now
-
-    if auctioneer.eta > 0 then
-        auctioneer.eta = math.max(0, auctioneer.eta - deltaTime)
-    end
-end
-
 function ui.update()
     if not auctioneer.visible[1] then
         return
@@ -148,8 +138,9 @@ function ui.drawGlobalCommands()
     local queueText = 'No tasks queued'
 
     if queueSize > 0 then
-        local mins = math.floor(auctioneer.eta / 60)
-        local secs = math.floor(auctioneer.eta % 60)
+        local remainingTime = task.getETA()
+        local mins = math.floor(remainingTime / 60)
+        local secs = math.floor(remainingTime % 60)
         queueText = string.format('%d tasks queued - est. %d:%02d', queueSize, mins, secs)
     end
 
@@ -1362,6 +1353,31 @@ function ui.drawBuySellTab()
     end
 end
 
+function ui.getAuctionHouseStatusCounts()
+    local counts = { onAuction = 0, sold = 0, notSold = 0, empty = 0 }
+
+    if auctioneer.auctionHouse == nil then
+        return counts
+    end
+
+    for slot = 0, 6 do
+        if auctioneer.auctionHouse[slot] ~= nil then
+            local status = auctioneer.auctionHouse[slot].status
+            if status == 'On auction' then
+                counts.onAuction = counts.onAuction + 1
+            elseif status == 'Sold' then
+                counts.sold = counts.sold + 1
+            elseif status == 'Not Sold' then
+                counts.notSold = counts.notSold + 1
+            elseif status == 'Empty' then
+                counts.empty = counts.empty + 1
+            end
+        end
+    end
+
+    return counts
+end
+
 function ui.drawAuctionHouseTab()
     ui.drawGlobalCommands()
     imgui.Separator()
@@ -1369,6 +1385,23 @@ function ui.drawAuctionHouseTab()
         imgui.Text('Auction House not initialized.')
         imgui.Text('Interact with it to initialize this tab.')
     else
+        -- Display colored status counts
+        local counts = ui.getAuctionHouseStatusCounts()
+        imgui.TextColored(utils.hexToImVec4('00FF00'), tostring(counts.onAuction) .. ' On Auction')
+        imgui.SameLine()
+        imgui.Text(' | ')
+        imgui.SameLine()
+        imgui.TextColored(utils.hexToImVec4('FFA500'), tostring(counts.sold) .. ' Sold')
+        imgui.SameLine()
+        imgui.Text(' | ')
+        imgui.SameLine()
+        imgui.TextColored(utils.hexToImVec4('FF0000'), tostring(counts.notSold) .. ' Not Sold')
+        imgui.SameLine()
+        imgui.Text(' | ')
+        imgui.SameLine()
+        imgui.TextColored(utils.hexToImVec4('808080'), tostring(counts.empty) .. ' Empty')
+        imgui.Separator()
+
         if imgui.BeginTable('##AuctionHouseTable', 5, bit.bor(ImGuiTableFlags_ScrollX, ImGuiTableFlags_ScrollY, ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_BordersV, ImGuiTableFlags_RowBg)) then
             imgui.TableSetupColumn('Status')
             imgui.TableSetupColumn('Item')
@@ -1393,7 +1426,13 @@ function ui.drawAuctionHouseTab()
                     imgui.TableNextRow()
 
                     imgui.TableSetColumnIndex(0)
-                    imgui.Text(data.status)
+                    if data.status == 'On auction' then
+                        imgui.TextColored(utils.hexToImVec4('00FF00'), data.status)
+                    elseif data.status == 'Sold' then
+                        imgui.TextColored(utils.hexToImVec4('FFA500'), data.status)
+                    elseif data.status == 'Not Sold' then
+                        imgui.TextColored(utils.hexToImVec4('FF0000'), data.status)
+                    end
                     imgui.TableSetColumnIndex(1)
                     imgui.Text(data.item)
                     imgui.TableSetColumnIndex(2)
@@ -1405,7 +1444,7 @@ function ui.drawAuctionHouseTab()
                 elseif data.status == 'Empty' then
                     imgui.TableNextRow()
                     imgui.TableSetColumnIndex(0)
-                    imgui.Text(data.status)
+                    imgui.TextColored(utils.hexToImVec4('808080'), data.status)
                 end
             end
             imgui.EndTable()

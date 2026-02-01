@@ -1,5 +1,5 @@
 addon.name = 'Auctioneer'
-addon.version = "2.30-ashita4.30"
+addon.version = '2.30-ashita4.30'
 addon.author = 'Original addon by Ivaar, ported and modified by looney'
 addon.desc = 'Interact with auction house using commands.'
 addon.link = 'https://github.com/loonsies/auctioneer'
@@ -74,7 +74,6 @@ end)
 
 ashita.events.register('d3d_present', 'd3d_present_cb', function ()
     ui.update()
-    ui.updateETA()
     mogGarden.update()
     nonBlockingRequests.processAll()
 end)
