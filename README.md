@@ -12,9 +12,9 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 ---
 
 <p align="center">
-  <img width="673" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/9f8bd440-a612-41b4-9368-111fe829ae51" />
-  <img width="678" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/f6ef6c87-0346-4479-99b6-9dbdf90aefb4" />
-  <img width="752" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/20cde589-0e8c-4638-9bb3-345f73d83928" />
+  <img width="400" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/9f8bd440-a612-41b4-9368-111fe829ae51" />
+  <img width="400" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/f6ef6c87-0346-4479-99b6-9dbdf90aefb4" />
+  <img width="500" style="max-width: 100%;" alt="image" src="https://github.com/user-attachments/assets/20cde589-0e8c-4638-9bb3-345f73d83928" />
 </p>
 
 # Features
@@ -95,5 +95,6 @@ The rest depends on your usage. You are responsible for the usage of this addon.
 - [Ivaar](https://github.com/Ivaar) for the [original addon](https://github.com/Ivaar/Ashita-addons/tree/master/Auctioneer)
 - [mousseng](https://github.com/mousseng) for some functions i used, mainly for item preview, inventory stuff
 - [ThornyFFXI](https://github.com/ThornyFFXI) for all their unvaluable help!
+
 
 
