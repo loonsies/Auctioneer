@@ -23,8 +23,8 @@ local ui = {}
 local minSize = { 575, 400 }
 local defaultSizeFFXIAH = { 750, 580 }
 local minSizeFFXIAH = { 400, 400 }
-local defaultSizeFFXIAHNoBazaar = { 575, 350 }
-local minSizeFFXIAHNoBazaar = { 400, 350 }
+local defaultSizeSingle = { 575, 350 }
+local minSizeFFXIAHSingle = { 400, 350 }
 local quantityInput = { 1 }
 local priceInput = { 0 }
 local purchaseHistory = {}
@@ -33,8 +33,37 @@ local gilIcon = nil
 
 local preview = {
     textureCache = {},
+    textureOrder = {},
+    maxTextureCache = 100,
     itemBackground = nil
 }
+
+local function cacheTexture(itemId, bitmap, imageSize)
+    if itemId == nil then
+        return nil
+    end
+
+    if preview.textureCache[itemId] == nil then
+        preview.textureCache[itemId] = utils.createTextureFromGame(bitmap, imageSize)
+    end
+
+    for i = #preview.textureOrder, 1, -1 do
+        if preview.textureOrder[i] == itemId then
+            table.remove(preview.textureOrder, i)
+            break
+        end
+    end
+    table.insert(preview.textureOrder, itemId)
+
+    if #preview.textureOrder > preview.maxTextureCache then
+        local evictId = table.remove(preview.textureOrder, 1)
+        if evictId ~= nil then
+            preview.textureCache[evictId] = nil
+        end
+    end
+
+    return preview.textureCache[itemId]
+end
 
 local modal = {
     visible = false
@@ -586,10 +615,8 @@ function ui.drawSearch()
                     local bitmap = items[itemId].bitmap
                     local imageSize = items[itemId].imageSize
 
-                    if itemId ~= nil and preview.textureCache[itemId] == nil then
-                        preview.textureCache[itemId] = utils.createTextureFromGame(bitmap, imageSize)
-                    end
-                    local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[itemId]))
+                    local cachedTexture = cacheTexture(itemId, bitmap, imageSize)
+                    local iconPointer = cachedTexture and tonumber(ffi.cast('uint32_t', cachedTexture)) or nil
 
                     local iconClicked = false
                     local labelClicked = false
@@ -769,10 +796,8 @@ function ui.drawItemPreview()
                 end
             end
 
-            if id ~= nil and preview.textureCache[id] == nil then
-                preview.textureCache[id] = utils.createTextureFromGame(item.bitmap, item.imageSize)
-            end
-            local iconPointer = tonumber(ffi.cast('uint32_t', preview.textureCache[id]))
+            local cachedTexture = cacheTexture(id, item.bitmap, item.imageSize)
+            local iconPointer = cachedTexture and tonumber(ffi.cast('uint32_t', cachedTexture)) or nil
 
             imgui.BeginGroup()
             imgui.Dummy({ 0, 4 })
@@ -1629,9 +1654,9 @@ function ui.drawFFXIAHWindows()
         local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
         local windowMinSize = minSizeFFXIAH
         local windowDefaultSize = defaultSizeFFXIAH
-        if data.bazaar == nil then
-            windowMinSize = minSizeFFXIAHNoBazaar
-            windowDefaultSize = defaultSizeFFXIAHNoBazaar
+        if data.sales or data.bazaar == nil then
+            windowMinSize = minSizeFFXIAHSingle
+            windowDefaultSize = defaultSizeSingle
         end
 
         imgui.SetNextWindowSizeConstraints(windowMinSize, { FLT_MAX, FLT_MAX })
