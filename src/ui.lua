@@ -1654,7 +1654,7 @@ function ui.drawFFXIAHWindows()
         local fetchedOn = os.date('%Y-%m-%d %H:%M:%S', window.fetchedOn)
         local windowMinSize = minSizeFFXIAH
         local windowDefaultSize = defaultSizeFFXIAH
-        if data.sales or data.bazaar == nil then
+        if data.sales == nil or data.bazaar == nil then
             windowMinSize = minSizeFFXIAHSingle
             windowDefaultSize = defaultSizeSingle
         end
