@@ -2,6 +2,7 @@
 -- Non-blocking HTTP(S) client for Ashita addons
 -- Handles HTTP and HTTPS requests without blocking the main thread
 -- Call processAll() from your d3d_present callback to advance requests
+-- Version: 1.1
 -----------------------------------------------------------------------------
 
 local socket = require('socket')
@@ -100,6 +101,9 @@ local function resetForRedirect(request)
     request.responseBody = {}
     request.requestData = nil
     request.sentBytes = 0
+    request.sendStartTime = nil
+    request.sendChunkEnd = nil
+    request.lineBuffer = nil
     request.receivedBodyBytes = 0
     request.contentLength = nil
     request.statusCode = nil
@@ -122,7 +126,8 @@ local function buildRequest(method, parsedUrl, requestHeaders, body)
     local requestLine = method .. ' ' .. uri .. ' HTTP/1.1\r\n'
 
     local headers = {
-        ['Host'] = parsedUrl.host .. (parsedUrl.port ~= (parsedUrl.isSecure and 443 or 80) and ':' .. parsedUrl.port or ''),
+        ['Host'] = parsedUrl.host ..
+            (parsedUrl.port ~= (parsedUrl.isSecure and 443 or 80) and ':' .. parsedUrl.port or ''),
         ['Connection'] = 'close',
         ['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0',
     }
@@ -157,6 +162,9 @@ end
 local function prepareHttpRequest(request)
     request.requestData = buildRequest(request.method, request.parsedUrl, request.headers, request.body)
     request.sentBytes = 0
+    request.sendStartTime = nil
+    request.sendChunkEnd = nil
+    request.lineBuffer = nil
     log(request, 'HTTP request prepared, bytes: ' .. #request.requestData)
 end
 
@@ -221,6 +229,17 @@ local function completeConnect(request)
     end
 end
 
+-- Keep partial lines between non-blocking reads.
+local function receiveLine(request)
+    local line, err, partial = request.socket:receive('*l', request.lineBuffer)
+    if line then
+        request.lineBuffer = nil
+    else
+        request.lineBuffer = partial
+    end
+    return line, err
+end
+
 local function handleChunkedBody(request)
     if request.expectingChunkTerminator then
         local needed = 2 - #(request.terminatorBuffer or '')
@@ -237,7 +256,7 @@ local function handleChunkedBody(request)
         end
 
         if request.expectingChunkTerminator then
-            if err == 'timeout' or err == 'wantread' or err == nil then
+            if err == 'timeout' or err == 'wantread' or err == 'wantwrite' or err == nil then
                 return false
             elseif err == 'closed' then
                 return nil, 'Connection closed while reading chunk end'
@@ -248,13 +267,13 @@ local function handleChunkedBody(request)
     end
 
     if request.awaitingTrailer then
-        local line, err = request.socket:receive('*l')
+        local line, err = receiveLine(request)
         if line then
             if line == '' then
                 return true
             end
             return false
-        elseif err == 'timeout' or err == 'wantread' then
+        elseif err == 'timeout' or err == 'wantread' or err == 'wantwrite' then
             return false
         elseif err == 'closed' then
             return true
@@ -264,7 +283,7 @@ local function handleChunkedBody(request)
     end
 
     if not request.chunkSize then
-        local line, err = request.socket:receive('*l')
+        local line, err = receiveLine(request)
         if line then
             local size = tonumber(line, 16)
             if not size then
@@ -278,7 +297,7 @@ local function handleChunkedBody(request)
             end
             request.chunkSize = size
             request.chunkBytesRead = 0
-        elseif err == 'timeout' or err == 'wantread' then
+        elseif err == 'timeout' or err == 'wantread' or err == 'wantwrite' then
             return false
         elseif err == 'closed' then
             return nil, 'Connection closed before chunk size'
@@ -300,7 +319,7 @@ local function handleChunkedBody(request)
             end
 
             if request.chunkBytesRead < request.chunkSize then
-                if err == 'timeout' or err == 'wantread' or err == nil then
+                if err == 'timeout' or err == 'wantread' or err == 'wantwrite' or err == nil then
                     return false
                 elseif err == 'closed' then
                     return nil, 'Connection closed mid-chunk'
@@ -339,7 +358,7 @@ local function handlePlainBody(request)
         return true
     end
 
-    if err == 'timeout' or err == 'wantread' or err == nil then
+    if err == 'timeout' or err == 'wantread' or err == 'wantwrite' or err == nil then
         return false
     elseif err == 'closed' then
         if not request.contentLength or request.receivedBodyBytes >= (request.contentLength or 0) then
@@ -573,9 +592,7 @@ local function processRequest(request)
             cleanupRequest(request)
         end
     elseif request.state == REQUEST_STATE.SENDING_REQUEST then
-        -- Send request data
-        local remaining = request.requestData:sub(request.sentBytes + 1)
-        if #remaining == 0 then
+        if request.sentBytes >= #request.requestData then
             request.state = REQUEST_STATE.RECEIVING_STATUS
             request.headerLines = {}
             request.responseHeaders = {}
@@ -584,63 +601,26 @@ local function processRequest(request)
             return
         end
 
-        -- Initialize send start time if not set
-        if not request.sendStartTime then
-            request.sendStartTime = os.clock()
-        end
-
-        -- Check for send timeout
-        local elapsed = os.clock() - request.sendStartTime
-        if elapsed > 10 then -- 10 second timeout for sending
+        request.sendStartTime = request.sendStartTime or os.clock()
+        if os.clock() - request.sendStartTime > 10 then
             request.state = REQUEST_STATE.ERROR
-            request.error = 'Send timeout after ' .. math.floor(elapsed) .. 's'
+            request.error = 'Send timeout'
             log(request, 'Send timeout for ' .. request.url)
             cleanupRequest(request)
             return
         end
 
-        local chunk = remaining
-        -- For small requests (like HTTP headers), send everything at once
-        if #remaining <= READ_CHUNK_SIZE * 4 then
-            chunk = remaining
-            log(request, 'Sending entire request at once: ' .. #chunk .. ' bytes')
-        else
-            chunk = remaining:sub(1, READ_CHUNK_SIZE)
-            log(request, 'Sending chunk: ' .. #chunk .. ' bytes')
-        end
-
-        -- Temporarily set socket to blocking mode for send
-        pcall(function () request.socket:settimeout(0.1) end) -- Very short timeout
-
-        -- Check if socket is ready for writing using select
-        local _, writeReady, selectErr = socket.select(nil, { request.socket }, 0)
-        if selectErr or not writeReady or #writeReady == 0 then
-            log(request, 'Socket not ready for writing: err=' .. tostring(selectErr) .. ', ready=' .. tostring(#(writeReady or {})))
-            -- Try again next frame if not ready
-            pcall(function () request.socket:settimeout(0) end)
-            return
-        end
-
-        log(request, 'Socket ready for writing, sending ' .. #chunk .. ' bytes')
-        local sent, err = request.socket:send(chunk)
-
-        -- If send failed, try to get more detailed error information
-        if not sent then
-            log(request, 'Send failed with error: ' .. tostring(err))
-
-            -- Try to read any response from server
-            local errorResponse, readErr = request.socket:receive('*a')
-            log(request, 'Server response after failed send: data=' .. tostring(errorResponse) .. ', err=' .. tostring(readErr))
-        end
-
-        pcall(function () request.socket:settimeout(0) end) -- Back to non-blocking
-
+        -- Keep the same write boundary until it finishes, including after TLS retries.
+        request.sendChunkEnd = request.sendChunkEnd or
+            math.min(#request.requestData, request.sentBytes + READ_CHUNK_SIZE)
+        local sent, err, partial = request.socket:send(
+            request.requestData, request.sentBytes + 1, request.sendChunkEnd)
+        request.sentBytes = sent or partial or request.sentBytes
         if sent then
-            request.sentBytes = request.sentBytes + sent
-            log(request, 'Sent ' .. sent .. ' bytes, total: ' .. request.sentBytes .. '/' .. #request.requestData)
-        elseif err == 'timeout' or err == 'wantwrite' then
-            -- Keep trying, socket is just busy
-            log(request, 'Send would block, retrying...')
+            request.sendChunkEnd = nil
+            log(request, 'Sent through byte ' .. sent .. '/' .. #request.requestData)
+        elseif err == 'timeout' or err == 'wantread' or err == 'wantwrite' then
+            log(request, 'Send pending: ' .. tostring(err))
         else
             request.state = REQUEST_STATE.ERROR
             request.error = 'Send error: ' .. (err or 'unknown')
@@ -649,7 +629,7 @@ local function processRequest(request)
         end
     elseif request.state == REQUEST_STATE.RECEIVING_STATUS then
         -- Get status line
-        local data, err = request.socket:receive('*l')
+        local data, err = receiveLine(request)
 
         if data then
             local code, message = parseStatusLine(data)
@@ -663,7 +643,7 @@ local function processRequest(request)
                 request.error = 'Invalid status line: ' .. data
                 cleanupRequest(request)
             end
-        elseif err == 'timeout' or err == 'wantread' then
+        elseif err == 'timeout' or err == 'wantread' or err == 'wantwrite' then
             -- Keep waiting
         elseif err == 'closed' then
             request.state = REQUEST_STATE.ERROR
@@ -676,7 +656,7 @@ local function processRequest(request)
         end
     elseif request.state == REQUEST_STATE.RECEIVING_HEADERS then
         -- Get headers line by line
-        local data, err = request.socket:receive('*l')
+        local data, err = receiveLine(request)
 
         if data then
             if data == '' then
@@ -743,7 +723,7 @@ local function processRequest(request)
             else
                 table.insert(request.headerLines, data)
             end
-        elseif err == 'timeout' or err == 'wantread' then
+        elseif err == 'timeout' or err == 'wantread' or err == 'wantwrite' then
             -- Keep waiting
         elseif err == 'closed' then
             request.state = REQUEST_STATE.ERROR
